@@ -1,11 +1,11 @@
-// "/" — the editor route. Loads README.md into a single live editor.
+// "/" - the editor route. Loads a localized demo document into a single live editor.
 // Uses the public `createEditor` API end-to-end (dogfooding the npm
 // surface from our own home page).
 
 import { createEditor } from "../../src/lib.ts";
 import { mountNav } from "../components/nav.ts";
-import { onLocaleChange, t, translateTree } from "../i18n.ts";
-import readme from "../../README.md?raw";
+import { getHomeDemoMarkdown } from "../demo-content.ts";
+import { getLocale, onLocaleChange, t, translateTree } from "../i18n.ts";
 
 export function homeRoute(root: HTMLElement): () => void {
   const cleanupNav = mountNav(root, "/");
@@ -33,7 +33,9 @@ export function homeRoute(root: HTMLElement): () => void {
   root.append(main);
 
   const host = main.querySelector(".hero-editor") as HTMLElement;
-  const editor = createEditor(host, { initialContent: readme });
+  let demoLocale = getLocale();
+  const editor = createEditor(host, { initialContent: getHomeDemoMarkdown(demoLocale) });
+  let lastDemoMarkdown = editor.getMarkdown();
   const toolbar = main.querySelector(".editor-toolbar") as HTMLElement;
   const status = main.querySelector(".editor-toolbar-status") as HTMLElement;
   let statusMessage: { key: string; vars?: Record<string, string | number | undefined> } | null = null;
@@ -41,6 +43,16 @@ export function homeRoute(root: HTMLElement): () => void {
   const setStatus = (key: string, vars?: Record<string, string | number | undefined>): void => {
     statusMessage = { key, vars };
     status.textContent = t(key, vars);
+  };
+  const switchDemoIfUntouched = (): void => {
+    const nextLocale = getLocale();
+    if (nextLocale === demoLocale) return;
+
+    if (editor.getMarkdown() === lastDemoMarkdown) {
+      editor.setMarkdown(getHomeDemoMarkdown(nextLocale));
+      lastDemoMarkdown = editor.getMarkdown();
+    }
+    demoLocale = nextLocale;
   };
   const updateToggles = (): void => {
     toolbar
@@ -97,6 +109,7 @@ export function homeRoute(root: HTMLElement): () => void {
   const applyLocale = (): void => {
     translateTree(main);
     if (statusMessage) status.textContent = t(statusMessage.key, statusMessage.vars);
+    switchDemoIfUntouched();
   };
   applyLocale();
   const cleanupLocale = onLocaleChange(applyLocale);

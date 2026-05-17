@@ -38,11 +38,19 @@ html, body {
   z-index: 20;
 }
 .site-nav .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 600;
   color: #1f1f1f;
   text-decoration: none;
   letter-spacing: -0.01em;
   font-size: 15px;
+}
+.site-nav .brand img {
+  width: 22px;
+  height: 22px;
+  display: block;
 }
 .site-nav .nav-links { display: flex; gap: 20px; flex: 1; }
 .site-nav .nav-links a {
@@ -110,7 +118,7 @@ html, body {
 /* ─── home: paper around the createEditor() surface ──────────────── */
 /* The lib's createEditor() mounts a `.typora-web-wrap` containing a
  * `.typora-web-editor-host` (the PM view) and a hidden
- * `.typora-web-source` (the textarea for ⌘/ source mode). On home we
+ * `.typora-web-source-editor` (the CM6 source mode editor). On home we
  * style the wrap as a paper sheet floating over the off-white page;
  * specs and other routes stay flat.
  *
@@ -126,7 +134,7 @@ html, body {
     0 8px 32px rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
 }
-.page-home .typora-web-source {
+.page-home .typora-web-source-editor {
   font: 14px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace;
   color: #555;
 }
@@ -635,7 +643,7 @@ html, body {
     0 1px 2px rgba(0, 0, 0, 0.28),
     0 16px 42px rgba(0, 0, 0, 0.32);
 }
-:root[data-appearance="dark"] .page-home .typora-web-source {
+:root[data-appearance="dark"] .page-home .typora-web-source-editor {
   color: #d8d3ca;
 }
 :root[data-appearance="dark"] .editor-toolbar button {
