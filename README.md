@@ -4,6 +4,8 @@
 
 Markdown looks like a finished document while you write it. Italic renders as *italic* the moment you close the asterisks. Headings appear at their final size as soon as you start typing. Source markers like `*` and `#` fade out when the cursor moves away and come back when you click in.
 
+Markdown syntax is constrained by [CommonMark 0.31.2][cm]. Typora extensions, GitHub-flavored tables/task items, math, Mermaid, and theme importing are layered on top as explicit, tested compatibility features.
+
 It's also an experiment. Every line of source was written by an AI agent through chat. The human only chats; nothing gets typed directly into source files. To keep the agent productive at this scale, each supported syntax is described as a **spec**: a seed text, an event sequence, and the expected rendered output. Each spec compiles to a test the agent has to make pass. The result is a usable editor and a record of how far agent coding holds up on a serious project.
 
 ## Try it
@@ -17,9 +19,10 @@ Task lists hold their state visually, and heavier Typora extensions render in pl
 - [x] inline marks (em, strong, code, strike, highlight, sub/sup)
 - [x] autolinks and reference-style links
 - [x] tables with per-column alignment
+- [x] sanitized CommonMark HTML blocks
 - [x] inline and block math (KaTeX-based)
 - [x] diagram fences like Mermaid (lazy-rendered)
-- [x] focus mode, typewriter mode, common editing shortcuts, custom Typora CSS themes, and local `.md` open/save
+- [x] focus mode, typewriter mode, common editing shortcuts, bilingual website chrome, custom Typora CSS themes, and local `.md` open/save
 
 Lists nest, and exit on a triple-Enter staircase the way Typora does:
 
@@ -80,7 +83,7 @@ Controller methods:
 
 Options: `initialContent`, `onChange(md)`, `onFocus()`, `onBlur()`.
 
-Two themes ship: `typora-web/theme-typora.css` (default look on the live demo) and `typora-web/theme-github.css`. Import one. Typora `.css` theme files can also be imported at runtime; common selectors such as `#write`, `body`, `.md-fences`, `.md-inline-math`, and `.md-toc` are scoped to the editor wrapper so custom themes do not leak across the host page.
+Two themes ship: `typora-web/theme-typora.css` (default look on the live demo) and `typora-web/theme-github.css`. Import one. Typora `.css` theme files can also be imported at runtime. This compatibility layer is experimental: common selectors such as `#write`, `body`, `html`, `:root`, `.md-fences`, `.md-inline-math`, and `.md-toc` are scoped to the editor wrapper, and document-level background/color rules are mirrored onto the editor surface so self-contained dark themes can affect the paper background. Browser file imports cannot safely resolve sibling CSS files referenced by relative `@import` or `url(...)`, so multi-file Typora themes may still need to be flattened into one CSS file before import.
 
 Common editing shortcuts include `Mod-b`, `Mod-i`, `Mod-k`, `Shift-Enter`, `Mod-0`..`Mod-6`, `Mod-Shift-q`, `Mod-Shift-7`, `Mod-Shift-8`, `Mod-Shift-k`, `Mod-Shift-m`, undo, and redo. `Mod` means `Cmd` on macOS and `Ctrl` elsewhere.
 
@@ -106,7 +109,7 @@ Legend: :white_check_mark: stable · :yellow_circle: partial (note explains what
 | table `\| a \| b \|` | :white_check_mark: | |
 | YAML front matter | :white_check_mark: | |
 | reference link def `[id]: url` | :yellow_circle: | live entry committed as block; reload drops the def node (markdown-it consumes it on parse) |
-| HTML block | :pause_button: | needs sanitizer policy; planned as opt-in plugin |
+| HTML block | :white_check_mark: | CommonMark HTML block tokens render through DOMPurify and serialize from the original source |
 | math block `$$…$$` | :white_check_mark: | rendered with KaTeX; source remains editable |
 | Mermaid fenced code | :white_check_mark: | ` ```mermaid ` fences render a diagram panel lazily and preserve source |
 
@@ -128,7 +131,7 @@ Legend: :white_check_mark: stable · :yellow_circle: partial (note explains what
 | hard break (2-space + `\n`) | :white_check_mark: | |
 | soft break (`\n` in para) | :white_check_mark: | |
 | backslash escape `\*` | :yellow_circle: | round-trip works; no input-time UX |
-| inline HTML | :pause_button: | paired with HTML block decision |
+| inline HTML | :yellow_circle: | preserved as literal source text for now; full sanitized inline rendering is still pending |
 | inline math `$x$` | :white_check_mark: | rendered with KaTeX outside code spans; source delimiters reappear near the cursor |
 
 ### Typora extensions
@@ -153,7 +156,8 @@ Legend: :white_check_mark: stable · :yellow_circle: partial (note explains what
 | focus mode | :white_check_mark: | API + `F8`; inactive blocks dim while editing |
 | typewriter mode | :white_check_mark: | API + `F9`; active cursor is scrolled toward the viewport center |
 | common editing shortcuts | :white_check_mark: | source-preserving Markdown commands |
-| custom Typora CSS themes | :white_check_mark: | runtime import, scoped normalization, persistence, and clear |
+| custom Typora CSS themes | :yellow_circle: | experimental runtime import, scoped normalization, dark background mirroring, persistence, and clear; multi-file themes with relative imports remain limited by browser file access |
+| website i18n | :white_check_mark: | English/Chinese switch for page chrome; editor document content is never translated |
 | local `.md` open/save | :white_check_mark: | File System Access API where available; open falls back to file input and Save As falls back to download |
 | lossless `parse → serialize → parse` | :white_check_mark: | |
 
@@ -175,5 +179,5 @@ The "report" link on every card in the [live demo's catalog][demo-specs] prefill
 
 [demo]: https://albert-pzy.github.io/typora-web/ "live demo"
 [demo-specs]: https://albert-pzy.github.io/typora-web/#/specs "spec catalog"
-[cm]: https://spec.commonmark.org/ "CommonMark"
+[cm]: https://spec.commonmark.org/0.31.2/ "CommonMark 0.31.2"
 [pmguide]: https://prosemirror.net/docs/guide/ "ProseMirror Guide"
