@@ -30,6 +30,28 @@ export const taskSpecs: FeatureSpecs = {
       ],
     },
     {
+      id: "plus-task-from-scratch",
+      label: "+ [ ] a — plus bullet marker creates a task checkbox",
+      seed: "",
+      events: ["+", " ", "[", " ", "]", " ", "a"],
+      checkpoints: [
+        { at: 2, expect: "<ul><li>|</li></ul>" },
+        { at: 6, expect: "<ul><li><checkbox/>|</li></ul>" },
+        { at: 7, expect: "<ul><li><checkbox/>a|</li></ul>" },
+      ],
+    },
+    {
+      id: "asterisk-checked-task-from-scratch",
+      label: "* [x] done — asterisk bullet marker creates a checked task checkbox",
+      seed: "",
+      events: ["*", " ", "[", "x", "]", " ", "d", "o", "n", "e"],
+      checkpoints: [
+        { at: 2, expect: "<ul><li>|</li></ul>" },
+        { at: 6, expect: "<ul><li><checkbox checked/>|</li></ul>" },
+        { at: 10, expect: "<ul><li><checkbox checked/>done|</li></ul>" },
+      ],
+    },
+    {
       id: "inline-marks-after-marker",
       label: "inline code and strong stay aligned after a task marker",
       seed: "- [x] 使用 `F8` 切换**专注模式**，使用 `F9` 切换**打字机模式**。",

@@ -260,8 +260,8 @@
 }
 .ProseMirror html-block .html-block-source {
   display: block;
-  margin: 8px 0 0;
-  padding: 10px 12px;
+  margin: 0.35em 0 0;
+  padding: 0.45em 0.6em;
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.035);
   white-space: pre-wrap;
@@ -333,6 +333,10 @@
 }
 
 /* ─── Task-list checkbox NodeView ────────────────────────────────── */
+.ProseMirror li:has(> p > .checkbox-frame:first-child) {
+  list-style-type: none;
+}
+
 /* Outer wrapper — extends the inline-block to the right with
  * transparent padding so the native caret (which positions itself at
  * the OUTER edge of an inline-block, not past the margin) ends up

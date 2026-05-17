@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
 import { EditorView } from "prosemirror-view";
 
@@ -30,6 +32,15 @@ function mountHtmlBlock(markdown: string): {
 }
 
 describe("CommonMark HTML blocks", () => {
+  test("source chrome uses paragraph-scale spacing", () => {
+    const widgetsCss = readFileSync("src/styles/widgets.css", "utf8");
+
+    expect(widgetsCss).toContain("margin: 0.35em 0 0;");
+    expect(widgetsCss).toContain("padding: 0.45em 0.6em;");
+    expect(widgetsCss).not.toContain("margin: 8px 0 0;");
+    expect(widgetsCss).not.toContain("padding: 10px 12px;");
+  });
+
   test("parse as a dedicated block node and serialize the original source", () => {
     const doc = parse('<div class="note">hello</div>');
     expect(doc.child(0).type).toBe(schema.nodes.html_block);

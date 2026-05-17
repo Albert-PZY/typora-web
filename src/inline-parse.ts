@@ -172,15 +172,14 @@ export function markExtRanges(
   let start = -1;
   let off = 0;
   parent.forEach((child) => {
-    if (child.isText) {
-      const has = child.marks.some((m) => m.type === markType);
-      if (has && start < 0) start = off;
-      if (!has && start >= 0) {
-        ranges.push([start - openLen, off + closeLen]);
-        start = -1;
-      }
+    if (!child.isText) return;
+    const has = child.marks.some((m) => m.type === markType);
+    if (has && start < 0) start = off;
+    if (!has && start >= 0) {
+      ranges.push([start - openLen, off + closeLen]);
+      start = -1;
     }
-    off += child.nodeSize;
+    off += child.text?.length ?? 0;
   });
   if (start >= 0) ranges.push([start - openLen, off + closeLen]);
   return ranges;

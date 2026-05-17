@@ -2,7 +2,7 @@ import type MarkdownIt from "markdown-it";
 import type StateBlock from "markdown-it/lib/rules_block/state_block.mjs";
 import type { Node as PMNode, Schema } from "prosemirror-model";
 import { Plugin, TextSelection } from "prosemirror-state";
-import { Decoration, DecorationSet, type NodeView } from "prosemirror-view";
+import { Decoration, DecorationSet, type EditorView, type NodeView } from "prosemirror-view";
 
 import { markConsumed, type InlineSpan } from "../inline-parse.ts";
 import { renderMathToHtml } from "../renderers/math.ts";
@@ -112,9 +112,15 @@ class MathBlockView implements NodeView {
   contentDOM: HTMLElement;
   private source: HTMLElement;
   private preview: HTMLElement;
+  private view: EditorView;
+  private getPos: () => number | undefined;
   private hasError = false;
 
-  constructor(node: PMNode) {
+  constructor(
+    node: PMNode,
+    view: EditorView,
+    getPos: () => number | undefined,
+  ) {
     const root = document.createElement("math-block");
     const source = document.createElement("math-source");
     const preview = document.createElement("math-preview");
@@ -123,6 +129,8 @@ class MathBlockView implements NodeView {
     this.contentDOM = source;
     this.source = source;
     this.preview = preview;
+    this.view = view;
+    this.getPos = getPos;
     source.hidden = true;
     preview.setAttribute("contenteditable", "false");
     preview.addEventListener("click", this.onPreviewClick);
@@ -130,10 +138,24 @@ class MathBlockView implements NodeView {
     this.render(node);
   }
 
-  private onPreviewClick = (): void => {
+  private onPreviewClick = (event: MouseEvent): void => {
+    event.preventDefault();
+    event.stopPropagation();
     this.dom.classList.add("math-source-open");
     this.source.hidden = false;
+    this.moveSelectionIntoSource();
   };
+
+  private moveSelectionIntoSource(): void {
+    const pos = this.getPos();
+    if (pos == null) return;
+    try {
+      this.view.dispatch(
+        this.view.state.tr.setSelection(TextSelection.create(this.view.state.doc, pos + 1)),
+      );
+      this.view.focus();
+    } catch {}
+  }
 
   private onDocumentMouseDown = (event: MouseEvent): void => {
     const target = event.target as Node | null;
@@ -170,7 +192,7 @@ function mathBlockNodeViewPlugin(): Plugin {
   return new Plugin({
     props: {
       nodeViews: {
-        math_block: (node) => new MathBlockView(node),
+        math_block: (node, view, getPos) => new MathBlockView(node, view, getPos),
       },
     },
   });

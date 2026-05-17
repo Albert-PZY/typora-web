@@ -144,4 +144,48 @@ describe("editor modes", () => {
       host.remove();
     }
   });
+
+  test("repeated Ctrl+/ toggles preserve task markers and inline source delimiters", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const markdown = [
+      "## 编辑流程",
+      "",
+      "- [x] 通过工具栏打开和保存本地 `.md` 文件。",
+      "- [x] 使用 `Shift-Enter` 插入硬换行，并留在当前段落中继续输入。",
+      "- [x] 使用 `F8` 切换**专注模式**，使用 `F9` 切换**打字机模式**。",
+      "- [x] 使用 `Mod-b`、`Mod-i`、`Mod-k`、`Mod-Shift-7`、`Mod-Shift-8` 等常见快捷键。",
+      "",
+      "> 当光标离开源码标记时，标记会弱化显示，但 Markdown 源码仍然可编辑。",
+    ].join("\n");
+    const editor = createEditor(host, { initialContent: markdown });
+
+    try {
+      for (let i = 0; i < 8; i++) {
+        const target = editor.isSourceMode()
+          ? host.querySelector<HTMLElement>(".typora-web-source-editor .cm-content")
+          : editor.view.dom;
+        expect(target).not.toBeNull();
+        target!.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "/",
+            ctrlKey: true,
+            bubbles: true,
+            cancelable: true,
+          }),
+        );
+        await Promise.resolve();
+      }
+
+      const roundTripped = editor.getMarkdown();
+      expect(roundTripped.trimEnd()).toBe(markdown);
+      expect(roundTripped).not.toContain("\\[x\\]");
+      expect(roundTripped).not.toContain("\\`F8\\`");
+      expect(roundTripped).not.toContain("\\**专注模式\\**");
+      expect(host.querySelectorAll(".checkbox[data-checked='1']").length).toBe(4);
+    } finally {
+      editor.destroy();
+      host.remove();
+    }
+  });
 });

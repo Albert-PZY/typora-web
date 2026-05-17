@@ -281,8 +281,8 @@ export const list: FeatureSpec = {
   name: "bullet_list",
 
   inputRules: (schema) => [
-    // `- ` at paragraph start wraps the paragraph into bullet_list.
-    wrappingInputRule(/^-\s$/, schema.nodes.bullet_list),
+    // CommonMark bullet markers (`- `, `+ `, `* `) wrap into bullet_list.
+    wrappingInputRule(/^[*+-]\s$/, schema.nodes.bullet_list),
     // `<n>. ` at paragraph start wraps into ordered_list, carrying the
     // typed number as the list's `start` attr. The fourth-arg join
     // predicate keeps the rule from re-wrapping when the user is

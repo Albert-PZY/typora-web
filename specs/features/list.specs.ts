@@ -14,6 +14,26 @@ export const listSpecs: FeatureSpecs = {
         { at: 2, expect: "<ul><li>|</li></ul>" },
       ],
     },
+    {
+      id: "plus-space-wraps",
+      label: "`+ ` (plus + space) wraps current paragraph into a bullet list",
+      seed: "",
+      events: ["+", " "],
+      checkpoints: [
+        { at: 1, expect: "+|" },
+        { at: 2, expect: "<ul><li>|</li></ul>" },
+      ],
+    },
+    {
+      id: "asterisk-space-wraps",
+      label: "`* ` (asterisk + space) wraps current paragraph into a bullet list",
+      seed: "",
+      events: ["*", " "],
+      checkpoints: [
+        { at: 1, expect: "*|" },
+        { at: 2, expect: "<ul><li>|</li></ul>" },
+      ],
+    },
 
     // ── 2. non-space does NOT trigger ───────────────────────────────────
     {
