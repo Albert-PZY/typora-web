@@ -1,5 +1,33 @@
 # Contributing
 
+## 中文贡献指南
+
+感谢你帮助改进 typora-web。这个项目的目标是在 Web 端尽量复刻 Typora 的 Markdown 编辑体验，同时保持原生、轻量、高性能和可测试。
+
+基本原则：
+
+- 使用 TypeScript、DOM API、ProseMirror、markdown-it、CodeMirror 6、KaTeX、Mermaid 等轻量库，不引入 Vue、React、Svelte、Angular 等前端框架。
+- Markdown 基线严格遵守 CommonMark 0.31.2；Typora 风格行为必须作为明确扩展实现，并配套测试。
+- 优先保留 Markdown 源码结构。任何渲染预览都不能破坏序列化所需的源文本。
+- 前端命令统一使用 `pnpm`，不要使用 `npm`。
+- 变更行为前先补测试或规格，优先运行窄范围测试，再运行完整验证。
+- 提交必须遵守 `docs/git-commit-convention.md`，不同类型的修改要拆分成多次提交。
+- 阶段性大改动发布前必须按 `docs/release-process.md` 准备版本号和 release notes。
+
+常用命令：
+
+```sh
+pnpm install
+pnpm dev
+pnpm test
+pnpm build
+pnpm build:lib
+```
+
+在 Windows 上编辑文件时，先重新读取当前文件内容，优先使用小而集中的补丁，并确保生成文件是 UTF-8 无 BOM。
+
+## English Guide
+
 Thanks for helping improve typora-web. This project aims to reproduce the
 Typora editing experience in a native, lightweight web editor while keeping the
 Markdown source model explicit and testable.

@@ -1,12 +1,43 @@
 # typora-web
 
+## 中文简介
+
+> 面向 Web 的原生、轻量、高性能 Typora 风格 Markdown 编辑器。
+
+typora-web 让 Markdown 在编辑时尽量接近最终文档形态，同时保留可往返序列化的 Markdown 源码。源码标记会在不需要时弱化或隐藏，数学公式、Mermaid 图表、代码块、表格、任务列表等富内容会在原地呈现。
+
+当前项目仍处于 beta 阶段，不建议直接用于生产环境。版本标签统一使用 `vx.x-beta.x` 格式，等维护者明确确认生产可用后才会发布 `vx.x.x` 版本。
+
+快速入口：
+
+- 在线演示：[typora-web demo][demo]
+- 规格目录：[Spec catalog][demo-specs]
+- 贡献指南：[CONTRIBUTING.md](CONTRIBUTING.md)
+- 提交规范：[docs/git-commit-convention.md](docs/git-commit-convention.md)
+- 发布流程：[docs/release-process.md](docs/release-process.md)
+
+主要能力：
+
+| 领域 | 支持情况 |
+|---|---|
+| 编辑模型 | 基于 ProseMirror 的所见即所得式 Markdown 编辑，保留源码结构 |
+| Markdown 基线 | 使用 markdown-it CommonMark 模式对齐 CommonMark 0.31.2 |
+| Typora 扩展 | 高亮、下标、上标、`[toc]`、emoji、KaTeX 数学公式、Mermaid 图表 |
+| 代码块 | 使用 CodeMirror 6 嵌入式编辑器，语言候选来自官方 CodeMirror 语言数据并按需懒加载 |
+| HTML 块 | 默认按源码文本显示，避免 `<details>` 等 HTML 直接变成原生控件 |
+| 本地文件 | 在浏览器能力允许时打开、编辑、保存和另存为本地 `.md` 文件 |
+| 视图模式 | 支持源码模式、专注模式、打字机模式、亮色和暗色主题 |
+| 网站界面 | 支持中英文切换，编辑区中的文档内容不会被自动翻译 |
+
+## English Overview
+
 > A native, lightweight, Typora-style Markdown editor for the web.
 
 typora-web makes Markdown feel like a finished document while it is still being
 edited. Source markers fade when they are not needed, rich blocks render in
 place, and the underlying Markdown remains round-trippable.
 
-The project is built with TypeScript, ProseMirror, markdown-it, CodeMirror 5,
+The project is built with TypeScript, ProseMirror, markdown-it, CodeMirror 6,
 KaTeX, Mermaid, and native DOM APIs. It intentionally does not use Vue, React,
 Svelte, or any other frontend framework.
 
@@ -34,7 +65,7 @@ npm-compatible SemVer, for example `0.6.0-beta.1`.
 | Editing model | WYSIWYG-style Markdown editing with source-preserving ProseMirror documents |
 | Markdown baseline | CommonMark 0.31.2 through markdown-it CommonMark mode |
 | Typora extensions | Highlight, subscript, superscript, `[toc]`, emoji shortcodes, math, and Mermaid |
-| Code blocks | Editable fenced code blocks with [CodeMirror 5 runmode][cm5-runmode] token classes |
+| Code blocks | Editable fenced code blocks with CodeMirror 6 language support and lazy-loaded highlighting |
 | Math | Inline and block math rendered with KaTeX |
 | Diagrams | Mermaid fences render lazy SVG previews and keep errors contained |
 | Local files | Open, edit, save, and Save As for local `.md` files where browser APIs allow it |
@@ -157,8 +188,8 @@ Partial or intentionally pending areas:
 - Reference definitions can be entered live, but markdown-it consumes
   definitions during parse.
 - Some complex emphasis rule-of-three and escaped-link edge cases remain.
-- Inline HTML is preserved as literal source text; sanitized inline rendering is
-  still pending.
+- Inline HTML and block HTML are preserved as literal source text by default;
+  optional sanitized HTML preview remains intentionally out of scope for now.
 - Mermaid is the only diagram engine currently implemented.
 - Runtime import of external Typora CSS themes is intentionally not supported.
 
@@ -224,7 +255,6 @@ split by logical change category.
 [MIT](LICENSE)
 
 [cm]: https://spec.commonmark.org/0.31.2/ "CommonMark 0.31.2"
-[cm5-runmode]: https://codemirror.net/5/doc/manual.html#addon_runmode "CodeMirror 5 runmode"
 [conventional-commits]: https://www.conventionalcommits.org/en/v1.0.0/ "Conventional Commits 1.0.0"
 [demo]: https://albert-pzy.github.io/typora-web/ "typora-web live demo"
 [demo-specs]: https://albert-pzy.github.io/typora-web/#/specs "typora-web spec catalog"
