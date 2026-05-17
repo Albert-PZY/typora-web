@@ -50,6 +50,7 @@
   min-height: 168px;
 }
 .ProseMirror[contenteditable="true"]:focus { outline: none; }
+.ProseMirror a { cursor: pointer; }
 
 /* ─── method-B syntax hints ──────────────────────────────────────── */
 .ProseMirror .syntax-hint {
