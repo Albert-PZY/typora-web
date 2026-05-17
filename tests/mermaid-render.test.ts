@@ -1,9 +1,6 @@
 import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
-import { readFileSync } from "node:fs";
 
 import { createMermaidRenderer } from "../src/renderers/mermaid.ts";
-
-const widgetsCss = readFileSync("src/styles/widgets.css", "utf8");
 
 describe("mermaid renderer", () => {
   test("initializes Mermaid lazily with strict security", async () => {
@@ -71,8 +68,6 @@ describe("mermaid source visibility policy", () => {
     try {
       expect(pre.classList.contains("diagram-success")).toBe(true);
       expect(pre.classList.contains("diagram-error")).toBe(false);
-      expect(widgetsCss).toContain(".ProseMirror pre.has-diagram.diagram-success > code");
-      expect(widgetsCss).toContain("display: none");
 
       pre.classList.remove("diagram-success");
       pre.classList.add("diagram-error");

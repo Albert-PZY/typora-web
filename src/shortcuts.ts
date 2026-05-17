@@ -6,13 +6,6 @@ import { wrapInList } from "prosemirror-schema-list";
 
 import { insertMathBlockCommand } from "./features/math.ts";
 
-function insertText(text: string): Command {
-  return (state, dispatch) => {
-    if (dispatch) dispatch(state.tr.insertText(text));
-    return true;
-  };
-}
-
 function insertHardBreak(schema: Schema): Command {
   return (state, dispatch) => {
     if (dispatch) {
