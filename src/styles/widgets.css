@@ -39,22 +39,26 @@
 }
 .typora-web-source-editor[hidden] { display: none; }
 .typora-web-source-editor .cm-editor,
-.typora-web-code-editor .cm-editor {
+.typora-web-code-editor .cm-editor,
+.typora-web-html-source.cm-editor {
   background: transparent;
   color: inherit;
 }
 .typora-web-source-editor .cm-scroller,
-.typora-web-code-editor .cm-scroller {
+.typora-web-code-editor .cm-scroller,
+.typora-web-html-source .cm-scroller {
   overflow: visible;
 }
 .typora-web-source-editor .cm-content,
-.typora-web-code-editor .cm-content {
+.typora-web-code-editor .cm-content,
+.typora-web-html-source .cm-content {
   min-height: 1.5em;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 .typora-web-source-editor .cm-line,
-.typora-web-code-editor .cm-line {
+.typora-web-code-editor .cm-line,
+.typora-web-html-source .cm-line {
   overflow-wrap: anywhere;
   word-break: break-word;
 }

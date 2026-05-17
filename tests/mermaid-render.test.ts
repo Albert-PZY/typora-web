@@ -1,9 +1,21 @@
 import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
 
 import { createEditor } from "../src/lib.ts";
-import { createMermaidRenderer } from "../src/renderers/mermaid.ts";
+import {
+  createMermaidRenderer,
+  normalizeMermaidSourceForRender,
+} from "../src/renderers/mermaid.ts";
 
 describe("mermaid renderer", () => {
+  test("adds render-only spaces around newlines adjacent to Mermaid symbols", () => {
+    expect(normalizeMermaidSourceForRender("flowchart LR\nA-->\n|ok|B")).toBe(
+      "flowchart LR\nA--> \n |ok|B",
+    );
+    expect(normalizeMermaidSourceForRender("flowchart LR\n  A --> B")).toBe(
+      "flowchart LR\n  A --> B",
+    );
+  });
+
   test("initializes Mermaid lazily with strict security", async () => {
     const calls: unknown[] = [];
     const renderer = createMermaidRenderer(async () => ({

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
+import type { EditorView as CodeMirrorView } from "@codemirror/view";
 import { EditorView } from "prosemirror-view";
 
 import { createState } from "../src/editor.ts";
@@ -68,7 +69,7 @@ describe("CommonMark HTML blocks", () => {
     expect(html).not.toContain("javascript:");
   });
 
-  test("editor view renders sanitized HTML preview and reveals source on click", () => {
+  test("editor view renders sanitized HTML preview and reveals highlighted source on click", async () => {
     const { block, cleanup } = mountHtmlBlock(
       [
         "<details>",
@@ -86,15 +87,16 @@ describe("CommonMark HTML blocks", () => {
       expect(block.querySelector(".html-block-preview")?.innerHTML).not.toContain("onclick");
       const source = block.querySelector<HTMLElement>(".html-block-source");
       expect(source?.tagName).toBe("DIV");
-      expect(source?.getAttribute("contenteditable")).toBe("plaintext-only");
       expect(source?.hidden).toBe(true);
 
       block.querySelector<HTMLElement>(".html-block-preview")?.dispatchEvent(
         new MouseEvent("click", { bubbles: true }),
       );
+      await Promise.resolve();
 
       expect(block.classList.contains("html-source-open")).toBe(true);
       expect(source?.hidden).toBe(false);
+      expect(source?.querySelector(".cm-editor.typora-web-html-source")).not.toBeNull();
       expect(source?.textContent).toContain("<details>");
       expect(source?.querySelector("details")).toBeNull();
     } finally {
@@ -114,8 +116,19 @@ describe("CommonMark HTML blocks", () => {
       expect(source).not.toBeNull();
       expect(source?.hidden).toBe(false);
 
-      source!.textContent = '<section onclick="alert(1)"><em>updated</em></section>';
-      source!.dispatchEvent(new InputEvent("input", { bubbles: true }));
+      const cmElement = source!.querySelector<HTMLElement>(".cm-editor") as
+        | (HTMLElement & { __typoraWebCodeMirrorView?: CodeMirrorView })
+        | null;
+      const editorView = cmElement?.__typoraWebCodeMirrorView;
+      if (!editorView) throw new Error("expected CodeMirror view");
+      const current = editorView.state.doc.toString();
+      editorView.dispatch({
+        changes: {
+          from: 0,
+          to: current.length,
+          insert: '<section onclick="alert(1)"><em>updated</em></section>',
+        },
+      });
 
       expect(block.querySelector(".html-block-preview em")?.textContent).toBe("updated");
       expect(block.querySelector(".html-block-preview")?.innerHTML).not.toContain("onclick");

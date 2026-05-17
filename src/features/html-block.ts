@@ -2,6 +2,10 @@ import type { Node as PMNode, Schema } from "prosemirror-model";
 import { Plugin } from "prosemirror-state";
 import type { EditorView, NodeView } from "prosemirror-view";
 
+import {
+  createEmbeddedCodeMirrorEditor,
+  type EmbeddedCodeMirrorEditor,
+} from "../code-highlighter.ts";
 import { sanitizeHtml } from "../sanitize.ts";
 import type { FeatureSpec } from "./_types.ts";
 
@@ -19,8 +23,10 @@ class HtmlBlockView implements NodeView {
   dom: HTMLElement;
   private preview: HTMLElement;
   private source: HTMLElement;
+  private sourceEditor: EmbeddedCodeMirrorEditor;
   private view: EditorView;
   private getPos: () => number | undefined;
+  private syncingFromProseMirror = false;
 
   constructor(
     node: PMNode,
@@ -38,14 +44,19 @@ class HtmlBlockView implements NodeView {
     this.source.className = "html-block-source";
     this.source.spellcheck = false;
     this.source.setAttribute("aria-label", "HTML source");
-    this.source.setAttribute("contenteditable", "plaintext-only");
     this.source.hidden = true;
     this.preview.addEventListener("mousedown", this.onPreviewMouseDown);
     this.preview.addEventListener("click", this.onPreviewClick);
-    this.source.addEventListener("input", this.onSourceInput);
     this.source.addEventListener("mousedown", this.onSourceMouseDown);
     document.addEventListener("mousedown", this.onDocumentMouseDown);
     this.dom.append(this.preview, this.source);
+    this.sourceEditor = createEmbeddedCodeMirrorEditor({
+      parent: this.source,
+      doc: rawHtml(node),
+      language: "html",
+      className: "typora-web-html-source",
+      onChange: this.onSourceChange,
+    });
     this.render(node);
   }
 
@@ -64,8 +75,10 @@ class HtmlBlockView implements NodeView {
     normalizeInteractiveHtml(preview);
     this.preview.replaceChildren(...Array.from(preview.childNodes));
 
-    if (document.activeElement !== this.source && this.source.textContent !== raw) {
-      this.source.textContent = raw;
+    if (this.sourceEditor.view.state.doc.toString() !== raw) {
+      this.syncingFromProseMirror = true;
+      this.sourceEditor.setDoc(raw);
+      this.syncingFromProseMirror = false;
     }
 
     if (isCommentOnly(raw)) {
@@ -80,7 +93,7 @@ class HtmlBlockView implements NodeView {
     event?.stopPropagation();
     this.dom.classList.add("html-source-open");
     this.source.hidden = false;
-    try { this.source.focus(); } catch {}
+    try { this.sourceEditor.view.focus(); } catch {}
   }
 
   private onPreviewMouseDown = (event: MouseEvent): void => {
@@ -95,12 +108,12 @@ class HtmlBlockView implements NodeView {
     event.stopPropagation();
   };
 
-  private onSourceInput = (): void => {
+  private onSourceChange = (raw: string): void => {
+    if (this.syncingFromProseMirror) return;
     const pos = this.getPos();
     if (pos == null) return;
     const node = this.view.state.doc.nodeAt(pos);
     if (!node || node.type.name !== "html_block") return;
-    const raw = this.source.textContent ?? "";
     if (raw === rawHtml(node)) return;
     this.view.dispatch(
       this.view.state.tr.setNodeMarkup(pos, undefined, {
@@ -120,9 +133,9 @@ class HtmlBlockView implements NodeView {
   destroy(): void {
     this.preview.removeEventListener("mousedown", this.onPreviewMouseDown);
     this.preview.removeEventListener("click", this.onPreviewClick);
-    this.source.removeEventListener("input", this.onSourceInput);
     this.source.removeEventListener("mousedown", this.onSourceMouseDown);
     document.removeEventListener("mousedown", this.onDocumentMouseDown);
+    this.sourceEditor.destroy();
   }
 
   stopEvent(event: Event): boolean {

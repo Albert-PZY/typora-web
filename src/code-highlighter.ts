@@ -191,6 +191,8 @@ export function createEmbeddedCodeMirrorEditor(
     }),
   });
   view.dom.classList.add(options.className);
+  (view.dom as HTMLElement & { __typoraWebCodeMirrorView?: CodeMirrorView })
+    .__typoraWebCodeMirrorView = view;
 
   let languageRequest = 0;
   const setLanguage = (language: string): void => {
