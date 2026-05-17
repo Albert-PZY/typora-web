@@ -34,6 +34,53 @@ export async function pickMarkdownFile(): Promise<
   }
 }
 
+export type MarkdownTreeEntry = {
+  name: string;
+  path: string;
+  kind: "file" | "directory";
+  children?: MarkdownTreeEntry[];
+  handle?: FileSystemFileHandle;
+};
+
+async function readDirectoryEntries(
+  directory: FileSystemDirectoryHandle,
+  basePath = directory.name,
+): Promise<MarkdownTreeEntry> {
+  const children: MarkdownTreeEntry[] = [];
+  for await (const [, handle] of directory.entries()) {
+    const path = `${basePath}/${handle.name}`;
+    if ("entries" in handle) {
+      const child = await readDirectoryEntries(handle, path);
+      if ((child.children?.length ?? 0) > 0) children.push(child);
+    } else if (/\.(md|markdown|mdown)$/i.test(handle.name)) {
+      children.push({ name: handle.name, path, kind: "file", handle });
+    }
+  }
+  children.sort((a, b) => {
+    if (a.kind !== b.kind) return a.kind === "directory" ? -1 : 1;
+    return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+  });
+  return { name: directory.name, path: basePath, kind: "directory", children };
+}
+
+export async function pickMarkdownDirectory(): Promise<
+  | { status: "picked"; tree: MarkdownTreeEntry }
+  | { status: "cancelled" }
+  | { status: "unsupported" }
+  | { status: "error"; message: string }
+> {
+  if (!window.showDirectoryPicker) return { status: "unsupported" };
+  try {
+    const handle = await window.showDirectoryPicker({ mode: "read" });
+    return { status: "picked", tree: await readDirectoryEntries(handle) };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return { status: "cancelled" };
+    }
+    return { status: "error", message: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 function pickMarkdownFileWithInput(): Promise<
   | { status: "picked"; handle: null; file: File }
   | { status: "cancelled" }

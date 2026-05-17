@@ -17,7 +17,13 @@ interface FileSystemFileHandle {
   createWritable(): Promise<FileSystemWritableFileStream>;
 }
 
+interface FileSystemDirectoryHandle {
+  readonly name: string;
+  entries(): AsyncIterable<[string, FileSystemDirectoryHandle | FileSystemFileHandle]>;
+}
+
 interface Window {
   showOpenFilePicker?: (options?: unknown) => Promise<FileSystemFileHandle[]>;
   showSaveFilePicker?: (options?: unknown) => Promise<FileSystemFileHandle>;
+  showDirectoryPicker?: (options?: unknown) => Promise<FileSystemDirectoryHandle>;
 }
