@@ -1,0 +1,580 @@
+/*
+ * Website chrome — quiet luxury, borderless.
+ *
+ * Whitespace and typography do the work; we use single hairline rules
+ * only at structural seams (sticky-nav / spec-group). Cards have no
+ * boxes; the editor itself has no frame. The page reads as a
+ * manuscript, not a dashboard.
+ *
+ * Editor styles live elsewhere:
+ *   - widgets:  src/styles/widgets.css
+ *   - theme:    src/styles/theme-typora.css (or theme-github.css)
+ */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Helvetica Neue", system-ui, sans-serif;
+  color: #1f1f1f;
+  background: #f5f4f0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+#app { display: flex; flex-direction: column; min-height: 100vh; }
+[hidden] { display: none !important; }
+
+/* ─── nav ────────────────────────────────────────────────────────── */
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 14px 32px;
+  font-size: 14px;
+  position: sticky;
+  top: 0;
+  background: rgba(245, 244, 240, 0.85);
+  backdrop-filter: saturate(180%) blur(12px);
+  z-index: 20;
+}
+.site-nav .brand {
+  font-weight: 600;
+  color: #1f1f1f;
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  font-size: 15px;
+}
+.site-nav .nav-links { display: flex; gap: 20px; flex: 1; }
+.site-nav .nav-links a {
+  color: #888;
+  text-decoration: none;
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+.site-nav .nav-links a:hover { color: #1f1f1f; }
+.site-nav .nav-links a.active { color: #1f1f1f; }
+.site-nav .ext { color: #888; text-decoration: none; transition: color 0.15s; }
+.site-nav .ext:hover { color: #1f1f1f; }
+
+/* Heading scroll offset — leave room for the sticky nav so toc
+ * jumps don't tuck the target under it. The lib uses native
+ * scrollIntoView({block: "start"}); each host decides its own offset. */
+.ProseMirror :is(h1, h2, h3, h4, h5, h6) {
+  scroll-margin-top: 72px;
+}
+
+/* ─── page wrapper ───────────────────────────────────────────────── */
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 56px 32px 96px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.page-home .route-footer {
+  color: #999;
+  font-size: 13px;
+  margin-top: 56px;
+  text-align: center;
+}
+.page-home .route-footer a {
+  color: #555;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+.page-home .route-footer a:hover { color: #1f1f1f; border-bottom-color: #1f1f1f; }
+
+/* ─── home: paper around the createEditor() surface ──────────────── */
+/* The lib's createEditor() mounts a `.typora-web-wrap` containing a
+ * `.typora-web-editor-host` (the PM view) and a hidden
+ * `.typora-web-source` (the textarea for ⌘/ source mode). On home we
+ * style the wrap as a paper sheet floating over the off-white page;
+ * specs and other routes stay flat.
+ *
+ * Two-layer shadow: tight close + wider ambient (Bear / Notion /
+ * Typora's own surface). */
+.page-home .typora-web-wrap {
+  min-height: 420px;
+  padding: 20px 40px 40px;
+  background: #fff;
+  border-radius: 3px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 32px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+}
+.page-home .typora-web-source {
+  font: 14px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #555;
+}
+.page-home {
+  padding-top: 16px;
+  padding-bottom: 80px;
+  max-width: 920px;
+}
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 10px;
+  min-height: 32px;
+}
+.editor-toolbar button {
+  border: none;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.68);
+  color: #666;
+  cursor: pointer;
+  font: 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  padding: 7px 9px;
+}
+.editor-toolbar button:hover {
+  background: #fff;
+  color: #1f1f1f;
+}
+.editor-toolbar button.active {
+  background: #1f1f1f;
+  color: #f6f4ef;
+}
+.editor-toolbar-sep {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(0, 0, 0, 0.08);
+  margin: 4px 6px;
+}
+.editor-toolbar-status {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #999;
+  font-size: 12px;
+  text-align: right;
+}
+
+/* ─── /spec page ──────────────────────────────────────────────────── */
+.specs-header { margin-bottom: 32px; }
+.specs-header h1 {
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 14px;
+  line-height: 1.2;
+}
+.specs-meta {
+  color: #777;
+  font-size: 14px;
+  margin: 0 0 24px;
+  line-height: 1.55;
+}
+.specs-meta strong {
+  color: #1f1f1f;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.specs-meta code {
+  font: 12.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: rgba(0, 0, 0, 0.045);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #444;
+}
+
+/* Folded "How to write a spec" reference card. Quiet by default; opens
+ * to a dense reference table when the reader wants the syntax. */
+.specs-format {
+  margin: 6px 0 22px;
+  font-size: 13px;
+  color: #666;
+}
+.specs-format > summary {
+  cursor: pointer;
+  padding: 6px 0;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #888;
+  user-select: none;
+}
+.specs-format > summary::-webkit-details-marker { display: none; }
+.specs-format > summary::before {
+  content: "+";
+  display: inline-block;
+  width: 9px;
+  color: #c5c5c5;
+  font-size: 13px;
+  line-height: 1;
+  text-align: center;
+}
+.specs-format[open] > summary::before { content: "−"; }
+.specs-format-body { margin-top: 8px; }
+.specs-format-body p { margin: 0 0 12px; line-height: 1.55; }
+.specs-format-body ul {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  line-height: 1.6;
+}
+.specs-format-body ul li { margin: 0; }
+.specs-format-body code {
+  font: 12px ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: rgba(0, 0, 0, 0.045);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #444;
+}
+.specs-format-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12.5px;
+  margin: 4px 0 0;
+}
+.specs-format-table th,
+.specs-format-table td {
+  text-align: left;
+  padding: 5px 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  vertical-align: top;
+}
+.specs-format-table th {
+  font-weight: 500;
+  color: #555;
+  width: 28%;
+}
+.specs-format-table td { color: #666; }
+.specs-format-table tr:last-child td { border-bottom: none; }
+
+/* Refined filter — sits inline like a search field, hairline below
+ * only on focus. Quiet at rest, clear when used. */
+.specs-toolbar { margin-bottom: 8px; }
+.specs-filter {
+  width: 100%;
+  border: none;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Helvetica Neue", system-ui, sans-serif;
+  color: #1f1f1f;
+  outline: none;
+  box-sizing: border-box;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.specs-filter::placeholder { color: #b5b5b5; }
+.specs-filter:focus {
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.specs-footer {
+  margin-top: 64px;
+  font-size: 12.5px;
+  color: #999;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.specs-footer a {
+  color: #555;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+}
+.specs-footer a:hover { color: #1f1f1f; border-bottom-color: #1f1f1f; }
+
+.hidden { display: none !important; }
+
+/* Feature group — clean TOC row, no border between adjacent groups
+ * (the cards inside carry the visual weight). */
+.spec-group { padding: 4px 0; }
+.spec-group > summary {
+  cursor: pointer;
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  list-style: none;
+}
+.spec-group > summary::-webkit-details-marker { display: none; }
+.spec-group > summary::before {
+  content: "›";
+  display: inline-block;
+  width: 14px;
+  color: #ccc;
+  transition: transform 0.18s;
+  font-size: 18px;
+  line-height: 1;
+}
+.spec-group[open] > summary::before { transform: rotate(90deg); }
+.spec-group-name {
+  font-weight: 600;
+  color: #1f1f1f;
+  font-size: 15px;
+  letter-spacing: -0.005em;
+}
+.spec-group-count {
+  color: #b5b5b5;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+/* Description on its own row under the summary — only visible when
+ * the group is open. Italics and a soft color give it its own voice
+ * without competing with case content. */
+.spec-group[open] .spec-group-desc {
+  margin: 2px 0 12px 26px;
+  color: #888;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.5;
+  max-width: 60ch;
+}
+.spec-group:not([open]) .spec-group-desc { display: none; }
+.spec-group-body {
+  padding: 0 0 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ─── case card — borderless soft sheet ──────────────────────────── */
+.case-card {
+  background: #fff;
+  border-radius: 6px;
+  padding: 14px 18px;
+  font-size: 13px;
+}
+.case-card.done .case-progress { color: #b5b5b5; }
+.case-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.case-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.case-label {
+  color: #1f1f1f;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+.case-label code {
+  font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #444;
+}
+.case-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #aaa;
+}
+.case-seed {
+  color: #888;
+  background: rgba(0, 0, 0, 0.035);
+  padding: 1px 6px;
+  border-radius: 3px;
+  max-width: 40ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.case-seed.is-empty { color: #bbb; font-style: italic; }
+.case-evcount {
+  color: #aaa;
+  font-variant-numeric: tabular-nums;
+}
+.case-controls {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  font-size: 12px;
+  color: #999;
+  flex-shrink: 0;
+}
+.case-controls button {
+  padding: 2px 7px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  color: #888;
+  min-width: 22px;
+  border-radius: 3px;
+  transition: color 0.12s, background 0.12s;
+}
+.case-controls button:hover:not(:disabled) {
+  color: #1f1f1f;
+  background: rgba(0, 0, 0, 0.04);
+}
+.case-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+.case-progress {
+  font-variant-numeric: tabular-nums;
+  color: #aaa;
+  min-width: 36px;
+  text-align: right;
+  font-size: 11.5px;
+}
+.case-next {
+  font: 10.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #555;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  padding: 1px 5px;
+  min-width: 14px;
+  text-align: center;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  line-height: 1.3;
+}
+
+.case-body { display: flex; flex-direction: column; gap: 8px; }
+.case-editor {
+  padding: 4px 0 6px;
+  font-size: 13px;
+}
+.case-editor .ProseMirror { min-height: 24px; outline: none; font-size: 13px; }
+.case-editor .ProseMirror p { margin: 2px 0; }
+
+/* Pretty — always visible, the case-card's primary observable. */
+.case-pretty-wrap { position: relative; margin: 0; }
+.case-pretty {
+  margin: 0;
+  padding: 8px 10px;
+  background: #fafafa;
+  border-radius: 4px;
+  font: 11.5px/1.55 ui-monospace, monospace;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #555;
+}
+
+.case-checkpoints {
+  font-size: 11.5px;
+  color: #aaa;
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+}
+.case-checkpoints > summary {
+  cursor: pointer;
+  padding: 2px 0;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #888;
+  user-select: none;
+}
+.case-checkpoints > summary::-webkit-details-marker { display: none; }
+.case-checkpoints > summary::before {
+  content: "+";
+  display: inline-block;
+  width: 9px;
+  color: #c5c5c5;
+  font-size: 13px;
+  line-height: 1;
+  text-align: center;
+}
+.case-checkpoints[open] > summary::before { content: "−"; }
+
+.case-report-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.cp-summary-stat {
+  color: #b5b5b5;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  padding: 0 5px;
+  border-radius: 2px;
+}
+.cp-summary-stat.all-ok { color: #4a9d6f; }
+.cp-summary-stat.any-bad { color: #c25656; }
+
+/* Checkpoint rows — colored by simulated pass/fail. The active row
+ * (cursor-on-it in the live view) gets a stronger left rule. */
+.cp-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cp-list li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: background 0.1s;
+}
+.cp-list li.ok { background: rgba(74, 157, 111, 0.07); }
+.cp-list li.ok:hover { background: rgba(74, 157, 111, 0.12); }
+.cp-list li.bad { background: rgba(194, 86, 86, 0.08); }
+.cp-list li.bad:hover { background: rgba(194, 86, 86, 0.14); }
+.cp-list li.active { border-left-color: #1f1f1f; }
+.cp-list li.ok.active { border-left-color: #4a9d6f; }
+.cp-list li.bad.active { border-left-color: #c25656; }
+.cp-at {
+  color: #b5b5b5;
+  font: 11px ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  min-width: 28px;
+  flex-shrink: 0;
+}
+.cp-list li.ok .cp-at { color: #6fa386; }
+.cp-list li.bad .cp-at { color: #c08585; }
+.cp-expect {
+  font: 11.5px/1.5 ui-monospace, monospace;
+  color: #555;
+  background: transparent;
+  padding: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.case-issue {
+  font-size: 11px;
+  color: #b5b5b5;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.12s, border-color 0.12s;
+}
+.case-issue:hover {
+  color: #555;
+  border-bottom-color: rgba(0, 0, 0, 0.15);
+}
+
+.dump-wrap { position: relative; margin: 4px 0; }
+
+/* ─── copy button — text-y, unframed ─────────────────────────────── */
+.copy-btn {
+  border: none;
+  background: transparent;
+  padding: 1px 6px;
+  font: 10.5px ui-monospace, monospace;
+  color: #aaa;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: color 0.12s, background 0.12s;
+}
+.copy-btn:hover { color: #555; background: rgba(0, 0, 0, 0.04); }
+.copy-btn-corner { position: absolute; top: 4px; right: 4px; }
+
+.wrap-pre { white-space: pre-wrap; word-break: break-word; }

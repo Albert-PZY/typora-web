@@ -1,0 +1,146 @@
+import { describe, test } from "@voidzero-dev/vite-plus-test";
+
+import { parse } from "../src/parser.ts";
+import { serialize } from "../src/serializer.ts";
+
+// Core invariant: parse(serialize(parse(md))) is structurally equal to parse(md).
+// We do not assert md string equality (the serializer normalizes), only that
+// parsing again yields the same tree — i.e. the doc round-trips losslessly.
+function roundTripStable(md: string): void {
+  const doc1 = parse(md);
+  const md2 = serialize(doc1);
+  const doc2 = parse(md2);
+  if (!doc1.eq(doc2)) {
+    throw new Error(
+      `round-trip mismatch\n--- input md ---\n${md}\n--- serialized md ---\n${md2}\n--- doc1 ---\n${JSON.stringify(doc1.toJSON(), null, 2)}\n--- doc2 ---\n${JSON.stringify(doc2.toJSON(), null, 2)}`,
+    );
+  }
+}
+
+describe("round-trip: blocks", () => {
+  test("paragraph", () => roundTripStable("hello world"));
+  test("multiple paragraphs", () => roundTripStable("one\n\ntwo\n\nthree"));
+  test("all heading levels", () =>
+    roundTripStable("# h1\n\n## h2\n\n### h3\n\n#### h4\n\n##### h5\n\n###### h6"));
+  test("setext h1", () => roundTripStable("Heading 1\n==="));
+  test("setext h2", () => roundTripStable("Heading 2\n---"));
+  test("setext mixed with atx", () =>
+    roundTripStable("Title\n===\n\n## Sub\n\nBody"));
+  test("blockquote single paragraph", () => roundTripStable("> quoted text"));
+  test("blockquote multi paragraph", () => roundTripStable("> first\n>\n> second"));
+  test("horizontal rule", () => roundTripStable("before\n\n---\n\nafter"));
+  test("toc", () => roundTripStable("# Title\n\n[toc]\n\nbody"));
+  test("toc uppercase normalizes", () =>
+    roundTripStable("# Title\n\n[toc]\n\nbody")); // [TOC] also accepted on input; output is [toc]
+  test("front matter", () =>
+    roundTripStable("---\ntitle: Hello\ndate: 2024-01-01\n---\n\nbody"));
+  test("front matter empty body", () => roundTripStable("---\n\n---\n\nbody"));
+  test("table basic", () =>
+    roundTripStable("| col1 | col2 |\n| ---  | ---  |\n| a    | b    |"));
+  test("table with alignment", () =>
+    roundTripStable("| L   | C     | R   |\n| :--- | :---: | ---: |\n| a   | b     | c   |"));
+  test("table with inline marks", () =>
+    roundTripStable("| a   | b      |\n| --- | ---    |\n| x   | **y**  |"));
+  test("fenced code with lang", () => roundTripStable("```ts\nconst x = 1;\n```"));
+  test("mermaid fenced diagram", () =>
+    roundTripStable("```mermaid\ngraph TD\n  A --> B\n```"));
+  test("fenced code without lang", () => roundTripStable("```\nplain text\n```"));
+  test("math block", () => roundTripStable("$$\na^2+b^2=c^2\n$$"));
+  test("code block preserves internal newlines", () =>
+    roundTripStable("```\nline 1\nline 2\nline 3\n```"));
+  // Indented (4-space) code: md-it produces a `code_block` token with no
+  // markup, same shape as a fenced block w/ no lang. Round-trip is at
+  // doc level — md-text serialises to the fenced form (no `style` attr
+  // distinguishes the two; phase 2 if shape preservation is needed).
+  test("indented code (collapses to fenced on save)", () =>
+    roundTripStable("    line 1\n    line 2"));
+});
+
+describe("round-trip: lists", () => {
+  test("bullet list", () => roundTripStable("- a\n- b\n- c"));
+  test("task list unchecked", () => roundTripStable("- [ ] foo"));
+  test("task list checked", () => roundTripStable("- [x] foo"));
+  test("task list mixed", () => roundTripStable("- [ ] todo\n- [x] done\n- plain"));
+  test("ordered list default start", () => roundTripStable("1. a\n2. b"));
+  test("ordered list with start", () => roundTripStable("5. a\n6. b"));
+  test("nested bullet list", () => roundTripStable("- outer\n  - inner\n- next"));
+  test("list item with multi-paragraph content", () =>
+    roundTripStable("- first para\n\n  second para\n- next item"));
+});
+
+describe("round-trip: inline marks", () => {
+  test("strong", () => roundTripStable("**bold**"));
+  test("highlight", () => roundTripStable("==marked=="));
+  test("subscript", () => roundTripStable("H~2~O"));
+  test("superscript", () => roundTripStable("E=mc^2^"));
+  test("highlight with spaces", () => roundTripStable("a ==hello world== b"));
+  test("em", () => roundTripStable("*italic*"));
+  test("strong (underscore)", () => roundTripStable("__bold__"));
+  test("em (underscore)", () => roundTripStable("_italic_"));
+  test("strong and em adjacent", () => roundTripStable("**bold** and *italic*"));
+  test("nested strong+em", () => roundTripStable("***both***"));
+  test("inline code", () => roundTripStable("run `npm test`"));
+  test("inline math", () => roundTripStable("Euler: $e^{i\\pi}+1=0$"));
+  test("inline code with backticks inside", () => roundTripStable("use `` ` `` as fence"));
+  test("link without title", () => roundTripStable("see [site](https://example.com)"));
+  test("autolink url", () => roundTripStable("see <https://example.com>"));
+  test("autolink email", () => roundTripStable("mail <foo@example.com>"));
+  test("link with title", () => roundTripStable('see [site](https://example.com "home")'));
+  // Reference links — doc-level round-trip stable (md-text collapses to
+  // inline form on serialize; the link mark carries the resolved href so
+  // re-parsing yields the same doc).
+  test("reference link full", () =>
+    roundTripStable("[ref][1]\n\n[1]: https://example.com"));
+  test("reference link collapsed", () =>
+    roundTripStable("[ref][]\n\n[ref]: https://example.com"));
+  test("reference link shortcut", () =>
+    roundTripStable("[ref]\n\n[ref]: https://example.com"));
+  test("reference link with title", () =>
+    roundTripStable('[ref][1]\n\n[1]: https://example.com "home"'));
+  test("image", () => roundTripStable("![alt](https://example.com/x.png)"));
+  test("image with title", () =>
+    roundTripStable('![alt](https://example.com/x.png "caption")'));
+  test("image empty alt", () => roundTripStable("![](https://example.com/x.png)"));
+  test("hard break", () => roundTripStable("line a  \nline b"));
+  test("html comment", () => roundTripStable("before <!-- a note --> after"));
+  test("html comment empty", () => roundTripStable("<!---->"));
+  test("emoji known", () => roundTripStable("ship it :rocket: now"));
+  test("emoji unknown stays text", () => roundTripStable(":notarealname: still here"));
+  test("soft break (newline in paragraph)", () => roundTripStable("line a\nline b"));
+});
+
+describe("round-trip: escaping", () => {
+  test("escaped markdown meta characters as literal text", () =>
+    roundTripStable("literal \\*not italic\\*"));
+  test("paragraph starting with heading-like char", () => roundTripStable("\\# not a heading"));
+  test("paragraph starting with list-like char", () => roundTripStable("\\- not a bullet"));
+  test("angle brackets", () => roundTripStable("a \\<b\\> c"));
+  test("underscores inside word", () => roundTripStable("snake\\_case\\_ident"));
+});
+
+describe("round-trip: composite", () => {
+  test("typical document", () => {
+    const md = [
+      "# Title",
+      "",
+      "Intro paragraph with **bold**, *italic*, and `code`.",
+      "",
+      "> A blockquote with a [link](https://example.com).",
+      "",
+      "- first item",
+      "- second **item**",
+      "",
+      "1. one",
+      "2. two",
+      "",
+      "```ts",
+      "const x: number = 1;",
+      "```",
+      "",
+      "---",
+      "",
+      "final paragraph",
+    ].join("\n");
+    roundTripStable(md);
+  });
+});

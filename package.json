@@ -1,0 +1,66 @@
+{
+  "name": "typora-web",
+  "version": "0.3.1",
+  "description": "A Typora-style Markdown editor for the web.",
+  "packageManager": "pnpm@11.1.0",
+  "license": "MIT",
+  "author": "Yanzhen Yu",
+  "homepage": "https://albert-pzy.github.io/typora-web/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Albert-PZY/typora-web.git"
+  },
+  "type": "module",
+  "main": "./dist/lib/typora-web.js",
+  "module": "./dist/lib/typora-web.js",
+  "exports": {
+    ".": {
+      "import": "./dist/lib/typora-web.js"
+    },
+    "./widgets.css": "./src/styles/widgets.css",
+    "./theme-typora.css": "./src/styles/theme-typora.css",
+    "./theme-github.css": "./src/styles/theme-github.css"
+  },
+  "files": [
+    "dist/lib",
+    "src/styles",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "vp dev",
+    "build": "tsc && vp build",
+    "build:lib": "tsc && vp build --config vite.lib.config.ts",
+    "preview": "vp preview",
+    "test": "vp test --run",
+    "prepublishOnly": "pnpm build:lib"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
+    "@voidzero-dev/vite-plus-test": "^0.1.21",
+    "happy-dom": "^20.9.0",
+    "typescript": "~6.0.2",
+    "vite": "npm:@voidzero-dev/vite-plus-core@latest",
+    "vite-plus": "latest"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@latest",
+    "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
+  },
+  "dependencies": {
+    "katex": "^0.16.46",
+    "markdown-it": "^14.1.1",
+    "markdown-it-emoji": "^3.0.0",
+    "mermaid": "^11.15.0",
+    "prosemirror-commands": "^1.7.1",
+    "prosemirror-history": "^1.5.0",
+    "prosemirror-inputrules": "^1.5.1",
+    "prosemirror-keymap": "^1.2.3",
+    "prosemirror-model": "^1.25.4",
+    "prosemirror-schema-basic": "^1.2.4",
+    "prosemirror-schema-list": "^1.5.1",
+    "prosemirror-state": "^1.4.4",
+    "prosemirror-transform": "^1.12.0",
+    "prosemirror-view": "^1.41.8"
+  }
+}
