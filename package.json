@@ -36,6 +36,7 @@
     "prepublishOnly": "pnpm build:lib"
   },
   "devDependencies": {
+    "@types/codemirror": "^5.60.17",
     "@types/markdown-it": "^14.1.2",
     "@voidzero-dev/vite-plus-test": "^0.1.21",
     "happy-dom": "^20.9.0",
@@ -48,6 +49,7 @@
     "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
   },
   "dependencies": {
+    "codemirror": "^5.65.21",
     "dompurify": "^3.4.3",
     "katex": "^0.16.46",
     "markdown-it": "^14.1.1",

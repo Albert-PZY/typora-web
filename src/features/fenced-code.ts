@@ -13,6 +13,7 @@ import {
 } from "prosemirror-view";
 
 import { leaveLineDraft } from "../block-draft.ts";
+import { highlightCode } from "../code-highlighter.ts";
 import { createLatestTaskScheduler } from "../renderers/latest-task.ts";
 import { mermaidRenderer } from "../renderers/mermaid.ts";
 import type { FeatureSpec } from "./_types.ts";
@@ -113,6 +114,7 @@ class CodeBlockView implements NodeView {
     const lang = (node.attrs.lang as string) ?? "";
     if (lang) pre.setAttribute("data-lang", lang);
     const code = document.createElement("code");
+    code.className = "cm-s-inner cm-s-default";
     pre.appendChild(code);
 
     const diagram = document.createElement("div");
@@ -288,6 +290,47 @@ class CodeBlockView implements NodeView {
 // Plugin: nodeView registration, chrome-visibility decorations, lang-focus
 // state, and ArrowUp/Down handlers for crossing main ↔ lang-input.
 // ─────────────────────────────────────────────────────────────────────────────
+
+const codeHighlightKey = new PluginKey<DecorationSet>("codeMirrorCodeHighlight");
+
+function buildCodeHighlightDecorations(doc: PMNode): DecorationSet {
+  const decos: Decoration[] = [];
+  doc.descendants((node, pos) => {
+    if (node.type.name !== "code_block") return true;
+    const lang = String(node.attrs.lang ?? "");
+    const tokens = highlightCode(node.textContent, lang);
+    const start = pos + 1;
+    for (const token of tokens) {
+      if (token.from < token.to) {
+        decos.push(
+          Decoration.inline(start + token.from, start + token.to, {
+            class: token.className,
+          }),
+        );
+      }
+    }
+    return false;
+  });
+  return decos.length > 0 ? DecorationSet.create(doc, decos) : DecorationSet.empty;
+}
+
+function codeHighlightPlugin(): Plugin<DecorationSet> {
+  return new Plugin<DecorationSet>({
+    key: codeHighlightKey,
+    state: {
+      init: (_, state) => buildCodeHighlightDecorations(state.doc),
+      apply: (tr, old) => {
+        if (!tr.docChanged) return old.map(tr.mapping, tr.doc);
+        return buildCodeHighlightDecorations(tr.doc);
+      },
+    },
+    props: {
+      decorations(state) {
+        return codeHighlightKey.getState(state) ?? DecorationSet.empty;
+      },
+    },
+  });
+}
 
 function fencedCodeChromePlugin(): Plugin<LangFocus> {
   return new Plugin<LangFocus>({
@@ -465,7 +508,11 @@ function makeFencedPlugin(schema: Schema) {
 export const fencedCode: FeatureSpec = {
   name: "code_block",
 
-  plugins: (schema) => [makeFencedPlugin(schema).plugin, fencedCodeChromePlugin()],
+  plugins: (schema) => [
+    makeFencedPlugin(schema).plugin,
+    codeHighlightPlugin(),
+    fencedCodeChromePlugin(),
+  ],
 
   // test-pretty renderCase for <pre>. Overrides the core switch branch
   // because core delegates `renderNode(codeEl)` back through the feature
