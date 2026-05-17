@@ -21,10 +21,7 @@ export function homeRoute(root: HTMLElement): () => void {
       <button type="button" data-action="focus" data-i18n="home.focus" data-i18n-title="home.focusTitle"></button>
       <button type="button" data-action="typewriter" data-i18n="home.typewriter" data-i18n-title="home.typewriterTitle"></button>
       <span class="editor-toolbar-sep"></span>
-      <button type="button" data-action="theme" data-i18n="home.theme" data-i18n-title="home.themeTitle"></button>
-      <button type="button" data-action="clear-theme" data-i18n="home.clearTheme" data-i18n-title="home.clearThemeTitle"></button>
       <span class="editor-toolbar-status" aria-live="polite"></span>
-      <input class="editor-theme-input" type="file" accept=".css,text/css" hidden />
     </div>
     <section class="hero-editor"></section>
     <p class="route-footer">
@@ -39,7 +36,6 @@ export function homeRoute(root: HTMLElement): () => void {
   const editor = createEditor(host, { initialContent: readme });
   const toolbar = main.querySelector(".editor-toolbar") as HTMLElement;
   const status = main.querySelector(".editor-toolbar-status") as HTMLElement;
-  const themeInput = main.querySelector(".editor-theme-input") as HTMLInputElement;
   let statusMessage: { key: string; vars?: Record<string, string | number | undefined> } | null = null;
 
   const setStatus = (key: string, vars?: Record<string, string | number | undefined>): void => {
@@ -95,26 +91,9 @@ export function homeRoute(root: HTMLElement): () => void {
     } else if (action === "typewriter") {
       editor.toggleTypewriterMode();
       updateToggles();
-    } else if (action === "theme") {
-      themeInput.click();
-    } else if (action === "clear-theme") {
-      editor.clearCustomTheme();
-      setStatus("home.status.themeCleared");
     }
   });
 
-  themeInput.addEventListener("change", () => {
-    const file = themeInput.files?.[0];
-    if (!file) return;
-    editor.importThemeFile(file).then((result) => {
-      if (result.status === "applied") {
-        setStatus("home.status.themeApplied", { name: result.name });
-      } else {
-        setStatus("home.status.error", { message: result.message });
-      }
-      themeInput.value = "";
-    });
-  });
   const applyLocale = (): void => {
     translateTree(main);
     if (statusMessage) status.textContent = t(statusMessage.key, statusMessage.vars);

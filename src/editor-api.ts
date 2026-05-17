@@ -27,13 +27,6 @@ import { isFocusMode as readFocusMode, setFocusMode as dispatchFocusMode } from 
 import { parse } from "./parser.ts";
 import { schema } from "./schema.ts";
 import { serialize } from "./serializer.ts";
-import {
-  applyThemeCss,
-  clearPersistedTheme,
-  clearTheme,
-  loadPersistedTheme,
-  persistTheme,
-} from "./theme.ts";
 
 export interface EditorOptions {
   /** Initial markdown the editor opens with. Defaults to empty. */
@@ -65,10 +58,6 @@ export interface Editor {
   saveMarkdownFile(): Promise<FileResult>;
   saveMarkdownFileAs(): Promise<FileResult>;
   getCurrentFileName(): string | null;
-  importThemeFile(file: File): Promise<{ status: "applied"; name: string } | { status: "error"; message: string }>;
-  applyThemeCss(name: string, cssText: string): void;
-  clearCustomTheme(): void;
-  getCustomThemeName(): string | null;
   /** Focus whichever surface is active. */
   focus(): void;
   /** Tear down the editor and remove its DOM. */
@@ -96,7 +85,6 @@ export function createEditor(
   let typewriterMode = false;
   let currentFileHandle: FileSystemFileHandle | null = null;
   let currentFileName: string | null = null;
-  let customThemeName: string | null = null;
 
   function buildView(initialMd: string): EditorView {
     const doc = initialMd ? parse(initialMd) : schema.nodes.doc.createAndFill()!;
@@ -305,11 +293,6 @@ export function createEditor(
   sourceTextarea.addEventListener("input", autoSizeSource);
 
   view = buildView(options.initialContent ?? "");
-  const persistedTheme = loadPersistedTheme();
-  if (persistedTheme) {
-    applyThemeCss(wrap, persistedTheme.name, persistedTheme.cssText);
-    customThemeName = persistedTheme.name;
-  }
 
   const controller: Editor = {
     getMarkdown(): string {
@@ -375,27 +358,6 @@ export function createEditor(
     },
     getCurrentFileName(): string | null {
       return currentFileName;
-    },
-    async importThemeFile(file: File) {
-      if (!file.name.toLowerCase().endsWith(".css")) {
-        return { status: "error", message: "Theme file must be a .css file." };
-      }
-      const cssText = await file.text();
-      this.applyThemeCss(file.name, cssText);
-      persistTheme(file.name, cssText);
-      return { status: "applied", name: file.name };
-    },
-    applyThemeCss(name: string, cssText: string): void {
-      applyThemeCss(wrap, name, cssText);
-      customThemeName = name;
-    },
-    clearCustomTheme(): void {
-      clearTheme(wrap);
-      clearPersistedTheme();
-      customThemeName = null;
-    },
-    getCustomThemeName(): string | null {
-      return customThemeName;
     },
     focus(): void {
       if (inSource) sourceTextarea.focus();
