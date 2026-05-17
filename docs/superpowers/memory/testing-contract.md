@@ -12,7 +12,7 @@ entrypoints:
   - tests/utils.ts
   - specs/events.ts
   - specs/pretty.ts
-last_verified_commit: 54dee9b
+last_verified_commit: 6d496b1
 status: active
 ---
 
@@ -35,8 +35,10 @@ The project treats behavior specs as the primary source of truth for Typora-comp
 - Pretty output should represent what the real DOM renders, not duplicate production rendering logic.
 - Parser and serializer changes need round-trip coverage for supported Markdown source forms.
 - Browser-only APIs must have deterministic fallback tests in happy-dom.
+- UI state modules such as locale and appearance should be tested through DOM attributes, storage side effects, and localized control text.
 
 ## Common Pitfalls
 
 - If a NodeView changes DOM shape, `specs/pretty.ts` or the feature render case may need an update.
 - Async renderers need synchronous observable state for tests, such as `data-*` state attributes or pure helper tests.
+- Removed public API methods should have negative tests when the removal is intentional user-facing scope control.

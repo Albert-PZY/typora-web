@@ -12,7 +12,7 @@ owned_paths:
 entrypoints:
   - src/features/index.ts
   - src/features/_types.ts
-last_verified_commit: 54dee9b
+last_verified_commit: 6d496b1
 status: active
 ---
 
@@ -45,8 +45,10 @@ Each supported Markdown or Typora behavior is implemented as a feature module un
 - Specs should describe user-observable behavior, not implementation internals.
 - Heavy renderers should be lazy-loaded when possible.
 - Feature UI must not break source round-trip.
+- Code block highlighting must preserve the `code_block` text as editable ProseMirror content. Use inline decorations over CodeMirror 5 runmode token offsets, not manual DOM replacement inside the NodeView content DOM.
 
 ## Compatibility Notes
 
 - CommonMark and GFM behavior should use markdown-it where possible.
 - Typora extensions may be implemented outside CommonMark/GFM, but they must preserve Markdown source form.
+- Fenced code languages without an imported CodeMirror mode should stay plain instead of using guessed tokenization.

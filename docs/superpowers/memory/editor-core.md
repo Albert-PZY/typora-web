@@ -15,7 +15,7 @@ owned_paths:
 entrypoints:
   - src/lib.ts
   - src/editor-api.ts
-last_verified_commit: 54dee9b
+last_verified_commit: 6d496b1
 status: active
 ---
 
@@ -42,6 +42,7 @@ status: active
 - `parse -> serialize -> parse` should remain lossless for supported syntax.
 - Feature keymaps run before `baseKeymap`; conflicting keys are chained in feature registration order.
 - `createEditor()` must stay framework-free and native DOM only.
+- Runtime external CSS theme import is not part of the public controller. Theme selection is handled by static CSS plus the website appearance module.
 
 ## Extension Points
 

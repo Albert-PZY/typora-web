@@ -9,7 +9,7 @@ owned_paths:
   - docs/superpowers/memory/**
 entrypoints:
   - README.md
-last_verified_commit: 54dee9b
+last_verified_commit: 6d496b1
 status: active
 ---
 
@@ -32,4 +32,4 @@ status: active
 
 - HTML block and inline HTML policy is intentionally unresolved.
 - Reference definition round-trip is partial because markdown-it consumes definitions during parse.
-- Theme compatibility with full Typora CSS is a new work area and needs tests before becoming canonical memory.
+- External Typora CSS theme import is intentionally out of scope for now; the supported styling path is built-in light/dark appearance CSS.
