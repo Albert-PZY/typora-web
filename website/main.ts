@@ -5,6 +5,7 @@ import "prosemirror-view/style/prosemirror.css";
 import "katex/dist/katex.min.css";
 import "../src/styles/widgets.css";
 import "../src/styles/theme-typora.css";
+import "./appearance.ts";
 import "./style.css";
 
 import { startRouter } from "./router.ts";

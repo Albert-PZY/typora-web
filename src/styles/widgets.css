@@ -478,3 +478,139 @@
   text-align: center;
   font: inherit;
 }
+
+/* ─── built-in dark appearance for editor chrome ────────────────── */
+:root[data-appearance="dark"] .ProseMirror .syntax-hint,
+:root[data-appearance="dark"] .ProseMirror .syntax-hint-italic {
+  color: #6f747b;
+}
+:root[data-appearance="dark"] .ProseMirror .play-caret {
+  background: #ece7dd;
+}
+:root[data-appearance="dark"] .ProseMirror .selection-marker {
+  color: #ece7dd;
+}
+:root[data-appearance="dark"] .ProseMirror mark-comment {
+  color: #858a91;
+}
+:root[data-appearance="dark"] .ProseMirror math-inline[data-math-state="error"],
+:root[data-appearance="dark"] .ProseMirror math-preview[data-math-state="error"] {
+  color: #ff8f86;
+}
+:root[data-appearance="dark"] .ProseMirror math-source {
+  background: rgba(232, 225, 214, 0.08);
+}
+:root[data-appearance="dark"] .ProseMirror ref-def {
+  color: #bbb4aa;
+}
+:root[data-appearance="dark"] .ProseMirror ref-label::before,
+:root[data-appearance="dark"] .ProseMirror ref-label::after,
+:root[data-appearance="dark"] .ProseMirror ref-title::before,
+:root[data-appearance="dark"] .ProseMirror ref-title::after {
+  color: #6f747b;
+}
+:root[data-appearance="dark"] .ProseMirror ref-url {
+  color: #8ab4e7;
+}
+:root[data-appearance="dark"] .ProseMirror ref-title {
+  color: #aaa399;
+}
+:root[data-appearance="dark"] .ProseMirror yaml-block {
+  color: #d8d3ca;
+  background: #292722;
+  border-left-color: #b08d42;
+}
+:root[data-appearance="dark"] .ProseMirror .toc {
+  background: #24262a;
+  border-color: #34373c;
+}
+:root[data-appearance="dark"] .ProseMirror .toc-empty,
+:root[data-appearance="dark"] .ProseMirror .toc-item {
+  color: #aaa399;
+}
+:root[data-appearance="dark"] .ProseMirror .toc-item:hover {
+  color: #ece7dd;
+}
+:root[data-appearance="dark"] .ProseMirror .emoji-completion {
+  background: #25272b;
+  border-color: #3c3f43;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.32);
+}
+:root[data-appearance="dark"] .ProseMirror .emoji-completion-row:hover {
+  background: #303339;
+}
+:root[data-appearance="dark"] .ProseMirror .emoji-completion-row.selected {
+  background: #343044;
+}
+:root[data-appearance="dark"] .ProseMirror .emoji-completion-name {
+  color: #bbb4aa;
+}
+:root[data-appearance="dark"] .ProseMirror .checkbox {
+  background: #202225;
+  border-color: #8b8f95;
+}
+:root[data-appearance="dark"] .ProseMirror .checkbox[data-checked="1"] {
+  background: #ece7dd;
+  border-color: #ece7dd;
+}
+:root[data-appearance="dark"] .ProseMirror .checkbox[data-checked="1"]::after {
+  border-color: #202225;
+}
+:root[data-appearance="dark"] .ProseMirror pre .cb-lang-input {
+  background: #24262a;
+  border-color: #4a4d52;
+  color: #e4ded4;
+}
+:root[data-appearance="dark"] .ProseMirror pre .cb-lang-input:focus {
+  border-color: #8ab4e7;
+}
+:root[data-appearance="dark"] .ProseMirror pre .diagram-panel {
+  background: rgba(232, 225, 214, 0.07);
+}
+:root[data-appearance="dark"] .ProseMirror pre .diagram-panel[data-diagram-state="loading"]::before {
+  color: #8b8f95;
+}
+:root[data-appearance="dark"] .ProseMirror pre .diagram-panel[data-diagram-state="error"] {
+  color: #ff8f86;
+}
+:root[data-appearance="dark"] .table-toolbar,
+:root[data-appearance="dark"] .table-resize-popup {
+  background: #24262a;
+  border-color: #3c3f43;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
+}
+:root[data-appearance="dark"] .table-tb-btn {
+  color: #bbb4aa;
+}
+:root[data-appearance="dark"] .table-tb-btn:hover {
+  background: #303339;
+  color: #ece7dd;
+}
+:root[data-appearance="dark"] .table-tb-btn.active {
+  background: #343044;
+  color: #f0d7ff;
+}
+:root[data-appearance="dark"] .table-tb-trash:hover {
+  background: #452b2d;
+  color: #ffb0a8;
+}
+:root[data-appearance="dark"] .table-tb-sep {
+  background: #3c3f43;
+}
+:root[data-appearance="dark"] .table-resize-cell {
+  background: #202225;
+  border-color: #4a4d52;
+}
+:root[data-appearance="dark"] .table-resize-cell.hover {
+  background: #8ab4e7;
+  border-color: #8ab4e7;
+}
+:root[data-appearance="dark"] .table-resize-inputs {
+  color: #bbb4aa;
+  border-top-color: #3c3f43;
+}
+:root[data-appearance="dark"] .table-resize-inputs input {
+  color: #e4ded4;
+  background: #202225;
+  border-color: #4a4d52;
+}

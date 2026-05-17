@@ -60,7 +60,8 @@ html, body {
   align-items: center;
   gap: 12px;
 }
-.site-nav .locale-toggle {
+.site-nav .locale-toggle,
+.site-nav .appearance-toggle {
   border: none;
   border-radius: 4px;
   background: transparent;
@@ -71,7 +72,9 @@ html, body {
   transition: color 0.15s;
 }
 .site-nav .locale-toggle:hover,
-.site-nav .locale-toggle:focus-visible {
+.site-nav .locale-toggle:focus-visible,
+.site-nav .appearance-toggle:hover,
+.site-nav .appearance-toggle:focus-visible {
   color: #1f1f1f;
   outline: none;
 }
@@ -598,3 +601,150 @@ html, body {
 .copy-btn-corner { position: absolute; top: 4px; right: 4px; }
 
 .wrap-pre { white-space: pre-wrap; word-break: break-word; }
+
+/* ─── built-in dark appearance ──────────────────────────────────── */
+:root[data-appearance="dark"],
+:root[data-appearance="dark"] body {
+  color: #d8d3ca;
+  background: #17191d;
+}
+:root[data-appearance="dark"] .site-nav {
+  background: rgba(23, 25, 29, 0.86);
+}
+:root[data-appearance="dark"] .site-nav .brand,
+:root[data-appearance="dark"] .site-nav .nav-links a.active {
+  color: #ece7dd;
+}
+:root[data-appearance="dark"] .site-nav .nav-links a,
+:root[data-appearance="dark"] .site-nav .ext,
+:root[data-appearance="dark"] .site-nav .locale-toggle,
+:root[data-appearance="dark"] .site-nav .appearance-toggle {
+  color: #9b958c;
+}
+:root[data-appearance="dark"] .site-nav .nav-links a:hover,
+:root[data-appearance="dark"] .site-nav .ext:hover,
+:root[data-appearance="dark"] .site-nav .locale-toggle:hover,
+:root[data-appearance="dark"] .site-nav .locale-toggle:focus-visible,
+:root[data-appearance="dark"] .site-nav .appearance-toggle:hover,
+:root[data-appearance="dark"] .site-nav .appearance-toggle:focus-visible {
+  color: #ece7dd;
+}
+:root[data-appearance="dark"] .page-home .typora-web-wrap {
+  background: #1f2125;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    0 16px 42px rgba(0, 0, 0, 0.32);
+}
+:root[data-appearance="dark"] .page-home .typora-web-source {
+  color: #d8d3ca;
+}
+:root[data-appearance="dark"] .editor-toolbar button {
+  background: rgba(43, 46, 51, 0.76);
+  color: #aaa399;
+}
+:root[data-appearance="dark"] .editor-toolbar button:hover {
+  background: #2c2f35;
+  color: #ece7dd;
+}
+:root[data-appearance="dark"] .editor-toolbar button.active {
+  background: #ece7dd;
+  color: #202225;
+}
+:root[data-appearance="dark"] .editor-toolbar-sep {
+  background: rgba(232, 225, 214, 0.12);
+}
+:root[data-appearance="dark"] .editor-toolbar-status,
+:root[data-appearance="dark"] .page-home .route-footer,
+:root[data-appearance="dark"] .specs-footer,
+:root[data-appearance="dark"] .case-checkpoints,
+:root[data-appearance="dark"] .case-progress,
+:root[data-appearance="dark"] .case-meta,
+:root[data-appearance="dark"] .cp-at {
+  color: #7f848b;
+}
+:root[data-appearance="dark"] .page-home .route-footer a,
+:root[data-appearance="dark"] .specs-footer a,
+:root[data-appearance="dark"] .case-issue {
+  color: #aaa399;
+  border-bottom-color: rgba(232, 225, 214, 0.18);
+}
+:root[data-appearance="dark"] .page-home .route-footer a:hover,
+:root[data-appearance="dark"] .specs-footer a:hover,
+:root[data-appearance="dark"] .case-issue:hover {
+  color: #ece7dd;
+  border-bottom-color: rgba(232, 225, 214, 0.42);
+}
+:root[data-appearance="dark"] .specs-header h1,
+:root[data-appearance="dark"] .specs-meta strong,
+:root[data-appearance="dark"] .spec-group-name,
+:root[data-appearance="dark"] .case-label {
+  color: #ece7dd;
+}
+:root[data-appearance="dark"] .specs-meta,
+:root[data-appearance="dark"] .specs-format,
+:root[data-appearance="dark"] .specs-format-table td,
+:root[data-appearance="dark"] .spec-group[open] .spec-group-desc,
+:root[data-appearance="dark"] .cp-expect {
+  color: #aaa399;
+}
+:root[data-appearance="dark"] .specs-meta code,
+:root[data-appearance="dark"] .specs-format-body code,
+:root[data-appearance="dark"] .case-label code,
+:root[data-appearance="dark"] .case-seed,
+:root[data-appearance="dark"] .case-next,
+:root[data-appearance="dark"] .case-pretty {
+  color: #d8d3ca;
+  background: rgba(232, 225, 214, 0.07);
+}
+:root[data-appearance="dark"] .specs-format-table th,
+:root[data-appearance="dark"] .case-controls,
+:root[data-appearance="dark"] .case-next {
+  color: #aaa399;
+}
+:root[data-appearance="dark"] .specs-format-table th,
+:root[data-appearance="dark"] .specs-format-table td {
+  border-bottom-color: rgba(232, 225, 214, 0.09);
+}
+:root[data-appearance="dark"] .specs-filter {
+  color: #ece7dd;
+  background: rgba(43, 46, 51, 0.72);
+}
+:root[data-appearance="dark"] .specs-filter::placeholder {
+  color: #73777e;
+}
+:root[data-appearance="dark"] .specs-filter:focus {
+  background: #24262a;
+  box-shadow: 0 0 0 1px rgba(232, 225, 214, 0.14);
+}
+:root[data-appearance="dark"] .case-card {
+  background: #1f2125;
+}
+:root[data-appearance="dark"] .case-controls button {
+  color: #9b958c;
+}
+:root[data-appearance="dark"] .case-controls button:hover:not(:disabled),
+:root[data-appearance="dark"] .copy-btn:hover {
+  color: #ece7dd;
+  background: rgba(232, 225, 214, 0.08);
+}
+:root[data-appearance="dark"] .case-pretty {
+  background: #24262a;
+}
+:root[data-appearance="dark"] .cp-list li.active {
+  border-left-color: #ece7dd;
+}
+:root[data-appearance="dark"] .cp-list li.ok {
+  background: rgba(92, 160, 120, 0.14);
+}
+:root[data-appearance="dark"] .cp-list li.ok:hover {
+  background: rgba(92, 160, 120, 0.2);
+}
+:root[data-appearance="dark"] .cp-list li.bad {
+  background: rgba(206, 104, 104, 0.15);
+}
+:root[data-appearance="dark"] .cp-list li.bad:hover {
+  background: rgba(206, 104, 104, 0.22);
+}
+:root[data-appearance="dark"] .copy-btn {
+  color: #7f848b;
+}
