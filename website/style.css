@@ -66,23 +66,39 @@ html, body {
 .site-nav .nav-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
 }
-.site-nav .locale-toggle,
-.site-nav .appearance-toggle {
+.site-nav .nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   background: transparent;
   color: #888;
   cursor: pointer;
-  font: inherit;
-  padding: 4px 0;
-  transition: color 0.15s;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
 }
-.site-nav .locale-toggle:hover,
-.site-nav .locale-toggle:focus-visible,
-.site-nav .appearance-toggle:hover,
-.site-nav .appearance-toggle:focus-visible {
+.site-nav .nav-icon svg {
+  width: 17px;
+  height: 17px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.site-nav .github-link svg {
+  fill: currentColor;
+  stroke: none;
+}
+.site-nav .nav-icon:hover,
+.site-nav .nav-icon:focus-visible {
+  background: rgba(0, 0, 0, 0.04);
   color: #1f1f1f;
   outline: none;
 }
@@ -149,6 +165,7 @@ html, body {
   gap: 4px;
   margin: 0 0 10px;
   min-height: 32px;
+  position: relative;
 }
 .editor-toolbar button {
   border: none;
@@ -158,6 +175,41 @@ html, body {
   cursor: pointer;
   font: 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   padding: 7px 9px;
+}
+.editor-toolbar .editor-toolbar-menu-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+.editor-toolbar .editor-toolbar-menu-button svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.editor-toolbar-menu {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  z-index: 12;
+  width: 132px;
+  padding: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.editor-toolbar-menu button {
+  display: block;
+  width: 100%;
+  background: transparent;
+  text-align: left;
+  line-height: 1.2;
 }
 .editor-toolbar button:hover {
   background: #fff;
@@ -625,17 +677,15 @@ html, body {
 }
 :root[data-appearance="dark"] .site-nav .nav-links a,
 :root[data-appearance="dark"] .site-nav .ext,
-:root[data-appearance="dark"] .site-nav .locale-toggle,
-:root[data-appearance="dark"] .site-nav .appearance-toggle {
+:root[data-appearance="dark"] .site-nav .nav-icon {
   color: #9b958c;
 }
 :root[data-appearance="dark"] .site-nav .nav-links a:hover,
 :root[data-appearance="dark"] .site-nav .ext:hover,
-:root[data-appearance="dark"] .site-nav .locale-toggle:hover,
-:root[data-appearance="dark"] .site-nav .locale-toggle:focus-visible,
-:root[data-appearance="dark"] .site-nav .appearance-toggle:hover,
-:root[data-appearance="dark"] .site-nav .appearance-toggle:focus-visible {
+:root[data-appearance="dark"] .site-nav .nav-icon:hover,
+:root[data-appearance="dark"] .site-nav .nav-icon:focus-visible {
   color: #ece7dd;
+  background: rgba(232, 225, 214, 0.08);
 }
 :root[data-appearance="dark"] .page-home .typora-web-wrap {
   background: #1f2125;
@@ -657,6 +707,17 @@ html, body {
 :root[data-appearance="dark"] .editor-toolbar button.active {
   background: #ece7dd;
   color: #202225;
+}
+:root[data-appearance="dark"] .editor-toolbar-menu {
+  background: #24262a;
+  border-color: #3c3f43;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
+}
+:root[data-appearance="dark"] .editor-toolbar-menu button {
+  background: transparent;
+}
+:root[data-appearance="dark"] .editor-toolbar-menu button:hover {
+  background: #303339;
 }
 :root[data-appearance="dark"] .editor-toolbar-sep {
   background: rgba(232, 225, 214, 0.12);

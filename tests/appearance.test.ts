@@ -33,7 +33,7 @@ describe("built-in appearance themes", () => {
     }
   });
 
-  test("adds a localized top navigation toggle next to GitHub", () => {
+  test("uses icon-only top navigation actions with localized labels", () => {
     localStorage.clear();
     setLocale("en");
     setAppearance("light");
@@ -44,16 +44,24 @@ describe("built-in appearance themes", () => {
       const actions = root.querySelector(".nav-actions");
       const github = actions?.querySelector(".github-link");
       const toggle = actions?.querySelector<HTMLButtonElement>(".appearance-toggle");
+      const locale = actions?.querySelector<HTMLButtonElement>(".locale-toggle");
 
       expect(github?.nextElementSibling).toBe(toggle);
-      expect(toggle?.textContent).toBe("Dark");
+      expect(toggle?.nextElementSibling).toBe(locale);
+      expect(github?.textContent?.trim()).toBe("");
+      expect(toggle?.textContent?.trim()).toBe("");
+      expect(locale?.textContent?.trim()).toBe("");
+      expect(toggle?.getAttribute("aria-label")).toBe("Switch light or dark theme");
+      expect(locale?.getAttribute("aria-label")).toBe("Switch language");
+      expect(toggle?.dataset.appearance).toBe("dark");
 
       toggle?.click();
       expect(getAppearance()).toBe("dark");
-      expect(toggle?.textContent).toBe("Light");
+      expect(toggle?.textContent?.trim()).toBe("");
+      expect(toggle?.dataset.appearance).toBe("light");
 
       setLocale("zh");
-      expect(toggle?.textContent).toBe("亮色");
+      expect(toggle?.getAttribute("aria-label")).toBe("切换亮色或暗色主题");
     } finally {
       cleanup();
       localStorage.clear();
