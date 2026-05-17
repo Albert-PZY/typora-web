@@ -70,8 +70,11 @@
   padding: 12px 14px;
   margin: 0 0 1em;
   border-radius: 4px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: visible;
   border: 1px solid #ececec;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .ProseMirror pre code {
   display: inline;
@@ -80,7 +83,9 @@
   background: transparent;
   border-radius: 0;
   font-size: 100%;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* ─── blockquote ─────────────────────────────────────────────────── */

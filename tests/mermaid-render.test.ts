@@ -80,7 +80,7 @@ describe("mermaid source visibility policy", () => {
     }
   });
 
-  test("clicking a Mermaid preview opens the editable source above the diagram", () => {
+  test("clicking a Mermaid preview opens source above the diagram and outside click hides it", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     const editor = createEditor(host, {
@@ -88,16 +88,23 @@ describe("mermaid source visibility policy", () => {
     });
 
     try {
-      const pre = host.querySelector("pre.has-diagram");
+      const wrapper = host.querySelector<HTMLElement>(".code-block-node.has-diagram");
+      const pre = host.querySelector("pre");
       const panel = host.querySelector<HTMLElement>(".diagram-panel");
 
+      expect(wrapper).not.toBeNull();
       expect(pre).not.toBeNull();
       expect(panel).not.toBeNull();
+      expect(pre?.contains(panel ?? null)).toBe(false);
 
       panel?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-      expect(pre?.classList.contains("diagram-source-open")).toBe(true);
+      expect(wrapper?.classList.contains("diagram-source-open")).toBe(true);
       expect(host.querySelector(".typora-web-code-editor")).not.toBeNull();
+
+      document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+
+      expect(wrapper?.classList.contains("diagram-source-open")).toBe(false);
     } finally {
       editor.destroy();
       host.remove();

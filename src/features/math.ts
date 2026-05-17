@@ -112,6 +112,7 @@ class MathBlockView implements NodeView {
   contentDOM: HTMLElement;
   private source: HTMLElement;
   private preview: HTMLElement;
+  private hasError = false;
 
   constructor(node: PMNode) {
     const root = document.createElement("math-block");
@@ -125,6 +126,7 @@ class MathBlockView implements NodeView {
     source.hidden = true;
     preview.setAttribute("contenteditable", "false");
     preview.addEventListener("click", this.onPreviewClick);
+    document.addEventListener("mousedown", this.onDocumentMouseDown);
     this.render(node);
   }
 
@@ -133,8 +135,17 @@ class MathBlockView implements NodeView {
     this.source.hidden = false;
   };
 
+  private onDocumentMouseDown = (event: MouseEvent): void => {
+    const target = event.target as Node | null;
+    if (target && this.dom.contains(target)) return;
+    if (this.hasError) return;
+    this.dom.classList.remove("math-source-open");
+    this.source.hidden = true;
+  };
+
   private render(node: PMNode): void {
     const result = renderMathToHtml(node.textContent, true);
+    this.hasError = !result.ok;
     this.preview.dataset.mathState = result.ok ? "success" : "error";
     this.preview.innerHTML = result.html;
     if (!result.ok) {
@@ -151,6 +162,7 @@ class MathBlockView implements NodeView {
 
   destroy(): void {
     this.preview.removeEventListener("click", this.onPreviewClick);
+    document.removeEventListener("mousedown", this.onDocumentMouseDown);
   }
 }
 

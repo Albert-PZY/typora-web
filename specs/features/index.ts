@@ -59,7 +59,16 @@ export const ALL_SPECS: FeatureSpecs[] = [
 ];
 
 export function collectRenderCases(): Record<string, RenderCase> {
-  return Object.assign({}, ...ALL_SPECS.map((s) => s.renderCases ?? {}));
+  const cases: Record<string, RenderCase> = {};
+  for (const spec of ALL_SPECS) {
+    for (const [tag, render] of Object.entries(spec.renderCases ?? {})) {
+      const previous = cases[tag];
+      cases[tag] = previous
+        ? (children, el) => render(previous(children, el), el)
+        : render;
+    }
+  }
+  return cases;
 }
 
 // Cases get namespaced by feature so ids stay unique across the app.

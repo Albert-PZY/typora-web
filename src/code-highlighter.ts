@@ -145,13 +145,18 @@ function commonExtensions(
         fontFamily: "inherit",
         lineHeight: "inherit",
         overflow: "visible",
+        overflowX: "hidden",
       },
       ".cm-content": {
         padding: "0",
         caretColor: "currentColor",
+        overflowWrap: "anywhere",
+        wordBreak: "break-word",
       },
       ".cm-line": {
         padding: "0",
+        overflowWrap: "anywhere",
+        wordBreak: "break-word",
       },
       ".cm-gutters": {
         display: "none",

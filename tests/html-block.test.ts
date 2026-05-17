@@ -7,7 +7,10 @@ import { sanitizeHtml } from "../src/sanitize.ts";
 import { schema } from "../src/schema.ts";
 import { serialize } from "../src/serializer.ts";
 
-function renderHtmlBlock(markdown: string): HTMLElement {
+function mountHtmlBlock(markdown: string): {
+  block: HTMLElement;
+  cleanup: () => void;
+} {
   const mount = document.createElement("div");
   document.body.appendChild(mount);
   const view = new EditorView(mount, { state: createState(parse(markdown)) });
@@ -17,10 +20,13 @@ function renderHtmlBlock(markdown: string): HTMLElement {
     mount.remove();
     throw new Error("expected html-block to render");
   }
-  const clone = block.cloneNode(true) as HTMLElement;
-  view.destroy();
-  mount.remove();
-  return clone;
+  return {
+    block,
+    cleanup: () => {
+      view.destroy();
+      mount.remove();
+    },
+  };
 }
 
 describe("CommonMark HTML blocks", () => {
@@ -42,8 +48,8 @@ describe("CommonMark HTML blocks", () => {
     expect(html).not.toContain("javascript:");
   });
 
-  test("editor view displays HTML block source text instead of native HTML widgets", () => {
-    const block = renderHtmlBlock(
+  test("editor view renders sanitized HTML preview and reveals source on click", () => {
+    const { block, cleanup } = mountHtmlBlock(
       [
         "<details>",
         "<summary>More</summary>",
@@ -52,11 +58,23 @@ describe("CommonMark HTML blocks", () => {
       ].join("\n"),
     );
 
-    expect(block.querySelector("details")).toBeNull();
-    expect(block.querySelector("summary")).toBeNull();
-    expect(block.querySelector("code.html-block-source")?.textContent).toContain("<details>");
-    expect(block.querySelector("code.html-block-source")?.textContent).toContain(
-      '<section onclick="alert(1)">',
-    );
+    try {
+      expect(block.querySelector("details")).toBeNull();
+      expect(block.querySelector("summary")).toBeNull();
+      expect(block.querySelector(".html-block-preview")?.textContent).toContain("More");
+      expect(block.querySelector(".html-block-preview strong")?.textContent).toBe("safe");
+      expect(block.querySelector(".html-block-preview")?.innerHTML).not.toContain("onclick");
+      expect(block.querySelector<HTMLElement>(".html-block-source")?.hidden).toBe(true);
+
+      block.querySelector<HTMLElement>(".html-block-preview")?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+
+      expect(block.classList.contains("html-source-open")).toBe(true);
+      expect(block.querySelector<HTMLElement>(".html-block-source")?.hidden).toBe(false);
+      expect(block.querySelector(".html-block-source")?.textContent).toContain("<details>");
+    } finally {
+      cleanup();
+    }
   });
 });

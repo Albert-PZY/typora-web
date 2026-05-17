@@ -18,7 +18,7 @@ describe("math renderer", () => {
     expect(result.html).toContain("\\notacommand{");
   });
 
-  test("clicking block math preview opens the source editor above the preview", () => {
+  test("clicking block math preview opens source and outside click hides it", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     const editor = createEditor(host, {
@@ -35,6 +35,11 @@ describe("math renderer", () => {
       preview?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
       expect(block?.classList.contains("math-source-open")).toBe(true);
       expect(source?.hidden).toBe(false);
+
+      document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+
+      expect(block?.classList.contains("math-source-open")).toBe(false);
+      expect(source?.hidden).toBe(true);
     } finally {
       editor.destroy();
       host.remove();

@@ -3,6 +3,15 @@ import type { FeatureSpecs } from "../_types.ts";
 export const fencedCodeSpecs: FeatureSpecs = {
   name: "code_block",
   renderCases: {
+    div: (children, el) => {
+      if (!el.classList.contains("code-block-node")) return children;
+      const diagram = Array.from(el.children).find((child) =>
+        child.classList.contains("diagram-panel"),
+      );
+      const state = diagram?.getAttribute("data-diagram-state");
+      const suffix = state ? `\n<diagram:${state}/>` : "";
+      return `${children}${suffix}`;
+    },
     pre: (_children, el) => {
       const lang = el.getAttribute("data-lang") ?? "";
       const langFocus = el.hasAttribute("data-lang-focus");
@@ -31,10 +40,7 @@ export const fencedCodeSpecs: FeatureSpecs = {
         }
       }
       const openFence = langFocus ? `\`\`\`${lang}|` : `\`\`\`${lang}`;
-      const diagram = el.querySelector(".diagram-panel");
-      const state = diagram?.getAttribute("data-diagram-state");
-      const suffix = state ? `\n<diagram:${state}/>` : "";
-      return `${openFence}\n${text}\n\`\`\`${suffix}`;
+      return `${openFence}\n${text}\n\`\`\``;
     },
   },
   cases: [

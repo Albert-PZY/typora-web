@@ -50,6 +50,13 @@
 .typora-web-source-editor .cm-content,
 .typora-web-code-editor .cm-content {
   min-height: 1.5em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.typora-web-source-editor .cm-line,
+.typora-web-code-editor .cm-line {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* ─── PM root reset ──────────────────────────────────────────────── */
@@ -134,6 +141,7 @@
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.035);
 }
+.ProseMirror math-source[hidden] { display: none; }
 .ProseMirror math-preview {
   display: block;
   overflow-x: auto;
@@ -232,22 +240,34 @@
 .ProseMirror .toc-h5 { padding-left: 4.8em; }
 .ProseMirror .toc-h6 { padding-left: 6em; }
 
-/* ─── CommonMark HTML blocks as source text ─────────────────────── */
+/* ─── CommonMark HTML blocks ────────────────────────────────────── */
 .ProseMirror html-block {
   display: block;
   margin: 0 0 1em;
 }
-.ProseMirror html-block .html-block-render {
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
+.ProseMirror html-block .html-block-preview {
+  display: flow-root;
+}
+.ProseMirror html-block .html-block-preview > :first-child {
+  margin-top: 0;
+}
+.ProseMirror html-block .html-block-preview > :last-child {
+  margin-bottom: 0;
+}
+.ProseMirror html-block .html-summary {
+  font-weight: 600;
+  margin: 0 0 0.45em;
 }
 .ProseMirror html-block .html-block-source {
   display: block;
-  padding: 0;
-  background: transparent;
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.035);
   white-space: pre-wrap;
+  font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+.ProseMirror html-block .html-block-source[hidden] { display: none; }
 .ProseMirror html-block .html-comment-source {
   color: #999;
   font-style: italic;
@@ -353,23 +373,27 @@
 }
 
 /* ─── Fenced code NodeView chrome ────────────────────────────────── */
-.ProseMirror pre { position: relative; }
-.ProseMirror pre .pm-code-content {
+.ProseMirror .code-block-node {
+  display: block;
+  position: relative;
+}
+.ProseMirror .code-block-node > pre { position: relative; }
+.ProseMirror .code-block-node .pm-code-content {
   display: none;
 }
-.ProseMirror pre .typora-web-code-editor {
+.ProseMirror .code-block-node .typora-web-code-editor {
   display: block;
   min-height: 1.5em;
 }
-.ProseMirror pre .cb-chrome {
+.ProseMirror .code-block-node .cb-chrome {
   display: none;
   position: absolute;
   right: 8px;
   bottom: 6px;
   user-select: none;
 }
-.ProseMirror pre.cb-active .cb-chrome { display: block; }
-.ProseMirror pre .cb-lang-input {
+.ProseMirror .code-block-node.cb-active .cb-chrome { display: block; }
+.ProseMirror .code-block-node .cb-lang-input {
   width: 80px;
   padding: 2px 6px;
   font: 12px ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -379,31 +403,62 @@
   color: #333;
   outline: none;
 }
-.ProseMirror pre .cb-lang-input:focus { border-color: #1f1f1f; }
-.ProseMirror pre.cb-lang-focus .play-caret { display: none; }
-.ProseMirror pre .diagram-panel {
+.ProseMirror .code-block-node .cb-lang-input:focus { border-color: #1f1f1f; }
+.ProseMirror .code-block-node .cb-lang-menu {
+  position: absolute;
+  right: 0;
+  bottom: 28px;
+  z-index: 12;
+  width: 190px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+.ProseMirror .code-block-node .cb-lang-menu[hidden] { display: none; }
+.ProseMirror .code-block-node .cb-lang-option {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 5px;
+  padding: 6px 8px;
+  background: transparent;
+  color: #333;
+  text-align: left;
+  font: 13px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  cursor: pointer;
+}
+.ProseMirror .code-block-node .cb-lang-option:hover {
+  background: #f0f0f0;
+}
+.ProseMirror .code-block-node.cb-lang-focus .play-caret { display: none; }
+.ProseMirror .code-block-node .diagram-panel {
   display: none;
-  margin-top: 10px;
+  margin: 8px 0 16px;
   padding: 10px;
   overflow-x: auto;
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.03);
   white-space: normal;
 }
-.ProseMirror pre.has-diagram .diagram-panel { display: block; }
-.ProseMirror pre.has-diagram.diagram-success:not(.diagram-source-open) .typora-web-code-editor {
+.ProseMirror .code-block-node.has-diagram .diagram-panel { display: block; }
+.ProseMirror .code-block-node.has-diagram.diagram-success:not(.diagram-source-open) > pre {
   display: none;
 }
-.ProseMirror pre.has-diagram.diagram-source-open .typora-web-code-editor {
+.ProseMirror .code-block-node.has-diagram.diagram-source-open > pre,
+.ProseMirror .code-block-node.has-diagram.diagram-error > pre {
   display: block;
   margin-bottom: 10px;
 }
-.ProseMirror pre .diagram-panel[data-diagram-state="loading"]::before {
+.ProseMirror .code-block-node .diagram-panel[data-diagram-state="loading"]::before {
   content: "Rendering diagram";
   color: #888;
   font: 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
-.ProseMirror pre .diagram-panel[data-diagram-state="error"] {
+.ProseMirror .code-block-node .diagram-panel[data-diagram-state="error"] {
   color: #b42318;
   white-space: pre-wrap;
 }
@@ -525,6 +580,10 @@
 :root[data-appearance="dark"] .ProseMirror html-block .html-comment-source {
   color: #858a91;
 }
+:root[data-appearance="dark"] .ProseMirror html-block .html-block-source {
+  background: rgba(232, 225, 214, 0.08);
+  color: #e4ded4;
+}
 :root[data-appearance="dark"] .ProseMirror math-inline[data-math-state="error"],
 :root[data-appearance="dark"] .ProseMirror math-preview[data-math-state="error"] {
   color: #ff8f86;
@@ -588,21 +647,32 @@
 :root[data-appearance="dark"] .ProseMirror .checkbox[data-checked="1"]::after {
   border-color: #202225;
 }
-:root[data-appearance="dark"] .ProseMirror pre .cb-lang-input {
+:root[data-appearance="dark"] .ProseMirror .code-block-node .cb-lang-input {
   background: #24262a;
   border-color: #4a4d52;
   color: #e4ded4;
 }
-:root[data-appearance="dark"] .ProseMirror pre .cb-lang-input:focus {
+:root[data-appearance="dark"] .ProseMirror .code-block-node .cb-lang-input:focus {
   border-color: #8ab4e7;
 }
-:root[data-appearance="dark"] .ProseMirror pre .diagram-panel {
+:root[data-appearance="dark"] .ProseMirror .code-block-node .cb-lang-menu {
+  background: #24262a;
+  border-color: #3c3f43;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
+}
+:root[data-appearance="dark"] .ProseMirror .code-block-node .cb-lang-option {
+  color: #e4ded4;
+}
+:root[data-appearance="dark"] .ProseMirror .code-block-node .cb-lang-option:hover {
+  background: #303339;
+}
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel {
   background: rgba(232, 225, 214, 0.07);
 }
-:root[data-appearance="dark"] .ProseMirror pre .diagram-panel[data-diagram-state="loading"]::before {
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel[data-diagram-state="loading"]::before {
   color: #8b8f95;
 }
-:root[data-appearance="dark"] .ProseMirror pre .diagram-panel[data-diagram-state="error"] {
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel[data-diagram-state="error"] {
   color: #ff8f86;
 }
 :root[data-appearance="dark"] .table-toolbar,

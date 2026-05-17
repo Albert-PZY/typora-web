@@ -50,7 +50,14 @@ describe("CodeMirror 6 code editing and highlighting", () => {
       expect(codeEditor).not.toBeNull();
       expect(content?.textContent).toContain('const value = "typora";');
       expect(languageInput?.value).toBe("js");
-      expect(host.querySelector("datalist.cb-lang-options option[value='Python']")).not.toBeNull();
+      languageInput?.dispatchEvent(new FocusEvent("focus", { bubbles: true }));
+
+      const menu = host.querySelector<HTMLElement>(".cb-lang-menu");
+      expect(host.querySelector("datalist.cb-lang-options")).toBeNull();
+      expect(menu).not.toBeNull();
+      expect(menu?.hidden).toBe(false);
+      expect(menu?.querySelector("[data-lang-name='Python']")?.textContent).toBe("Python");
+      expect(menu?.textContent).not.toContain("ecmascript");
     } finally {
       editor.destroy();
       host.remove();
@@ -73,6 +80,27 @@ describe("CodeMirror 6 code editing and highlighting", () => {
       expect(host.querySelector(".typora-web-source-editor .cm-content")?.textContent).toContain(
         'type Mode = "source";',
       );
+    } finally {
+      editor.destroy();
+      host.remove();
+    }
+  });
+
+  test("default code block styles wrap long content instead of horizontal scrolling", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const longLine = "const value = '" + "typora-web-".repeat(40) + "';";
+    const editor = createEditor(host, { initialContent: `\`\`\`js\n${longLine}\n\`\`\`` });
+
+    try {
+      await Promise.resolve();
+      const cmContent = host.querySelector<HTMLElement>(".typora-web-code-editor .cm-content");
+      const cmLine = host.querySelector<HTMLElement>(".typora-web-code-editor .cm-line");
+
+      expect(cmContent).not.toBeNull();
+      expect(cmLine).not.toBeNull();
+      expect(getComputedStyle(cmContent!).overflowWrap).toBe("anywhere");
+      expect(getComputedStyle(cmLine!).wordBreak).toBe("break-word");
     } finally {
       editor.destroy();
       host.remove();

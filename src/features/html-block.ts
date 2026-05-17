@@ -2,6 +2,7 @@ import type { Node as PMNode, Schema } from "prosemirror-model";
 import { Plugin } from "prosemirror-state";
 import type { NodeView } from "prosemirror-view";
 
+import { sanitizeHtml } from "../sanitize.ts";
 import type { FeatureSpec } from "./_types.ts";
 
 const HTML_COMMENT_BLOCK_RE = /^\s*<!--[\s\S]*?-->\s*$/;
@@ -16,10 +17,19 @@ function isCommentOnly(raw: string): boolean {
 
 class HtmlBlockView implements NodeView {
   dom: HTMLElement;
+  private preview: HTMLElement;
+  private source: HTMLElement;
 
   constructor(node: PMNode) {
     this.dom = document.createElement("html-block");
     this.dom.setAttribute("contenteditable", "false");
+    this.preview = document.createElement("div");
+    this.preview.className = "html-block-preview";
+    this.source = document.createElement("pre");
+    this.source.className = "html-block-source";
+    this.source.hidden = true;
+    this.preview.addEventListener("click", this.onPreviewClick);
+    document.addEventListener("mousedown", this.onDocumentMouseDown);
     this.render(node);
   }
 
@@ -33,22 +43,58 @@ class HtmlBlockView implements NodeView {
     const raw = rawHtml(node);
     this.dom.dataset.raw = raw;
 
-    const source = document.createElement("pre");
-    source.className = "html-block-render";
+    const preview = document.createElement("div");
+    preview.innerHTML = sanitizeHtml(raw);
+    normalizeInteractiveHtml(preview);
+    this.preview.replaceChildren(...Array.from(preview.childNodes));
+
     const code = document.createElement("code");
-    code.className = "html-block-source";
     code.textContent = raw;
-    source.append(code);
+    this.source.replaceChildren(code);
 
     if (isCommentOnly(raw)) {
-      code.classList.add("html-comment-source");
+      this.source.classList.add("html-comment-source");
+    } else {
+      this.source.classList.remove("html-comment-source");
     }
 
-    this.dom.replaceChildren(source);
+    this.dom.replaceChildren(this.preview, this.source);
+  }
+
+  private onPreviewClick = (): void => {
+    this.dom.classList.add("html-source-open");
+    this.source.hidden = false;
+  };
+
+  private onDocumentMouseDown = (event: MouseEvent): void => {
+    const target = event.target as Node | null;
+    if (target && this.dom.contains(target)) return;
+    this.dom.classList.remove("html-source-open");
+    this.source.hidden = true;
+  };
+
+  destroy(): void {
+    this.preview.removeEventListener("click", this.onPreviewClick);
+    document.removeEventListener("mousedown", this.onDocumentMouseDown);
   }
 
   ignoreMutation(): boolean {
     return true;
+  }
+}
+
+function normalizeInteractiveHtml(root: HTMLElement): void {
+  for (const summary of Array.from(root.querySelectorAll("summary"))) {
+    const replacement = document.createElement("div");
+    replacement.className = "html-summary";
+    replacement.replaceChildren(...Array.from(summary.childNodes));
+    summary.replaceWith(replacement);
+  }
+  for (const details of Array.from(root.querySelectorAll("details"))) {
+    const replacement = document.createElement("div");
+    replacement.className = "html-details";
+    replacement.replaceChildren(...Array.from(details.childNodes));
+    details.replaceWith(replacement);
   }
 }
 
