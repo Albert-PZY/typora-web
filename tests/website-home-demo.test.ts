@@ -65,29 +65,45 @@ describe("website home demo content", () => {
     }
   });
 
-  test("places editor actions behind a top-left menu button", () => {
+  test("renders Typora-like menu bar, sidebar, and status bar chrome", () => {
     setLocale("en");
     const root = document.createElement("div");
     const cleanup = homeRoute(root);
 
     try {
-      const toolbar = root.querySelector<HTMLElement>(".editor-toolbar");
-      const menuButton = toolbar?.querySelector<HTMLButtonElement>('[data-action="menu"]');
-      const menu = toolbar?.querySelector<HTMLElement>(".editor-toolbar-menu");
+      const navLinks = Array.from(root.querySelectorAll(".nav-links a")).map((link) => (
+        link.textContent?.trim()
+      ));
+      const menuButtons = Array.from(root.querySelectorAll(".editor-menu-button")).map((button) => (
+        button.textContent?.trim()
+      ));
+      const fileButton = root.querySelector<HTMLButtonElement>('[data-menu="file"]');
+      const statusbar = root.querySelector<HTMLElement>(".editor-statusbar");
+      const sidebar = root.querySelector<HTMLElement>(".editor-sidebar");
 
-      expect(menuButton).not.toBeNull();
-      expect(menuButton?.textContent?.trim()).toBe("");
-      expect(menuButton?.getAttribute("aria-label")).toBe("Editor tools");
-      expect(menu?.hidden).toBe(true);
-      expect(toolbar?.querySelectorAll(":scope > button[data-action]").length).toBe(1);
-      expect(menu?.querySelectorAll("button[data-action]").length).toBe(5);
+      expect(navLinks).toEqual(["Specs", "Editor"]);
+      expect(menuButtons).toEqual(["File", "Edit", "Paragraph", "Format", "View"]);
+      expect(statusbar).not.toBeNull();
+      expect(sidebar?.hidden).toBe(true);
 
-      menuButton?.click();
+      fileButton?.click();
 
-      expect(menu?.hidden).toBe(false);
-      expect(Array.from(menu?.querySelectorAll("button[data-action]") ?? []).map((button) => (
-        (button as HTMLButtonElement).dataset.action
-      ))).toEqual(["open", "save", "save-as", "focus", "typewriter"]);
+      const fileActions = Array.from(
+        root.querySelectorAll<HTMLButtonElement>('[data-menu-action]'),
+      ).map((button) => button.dataset.menuAction);
+      expect(fileActions).toContain("open-folder");
+      expect(fileActions).toContain("save-as");
+
+      root.querySelector<HTMLButtonElement>('[data-menu-action="file-tree"]')?.click();
+      expect(sidebar?.hidden).toBe(false);
+      expect(root.querySelector(".editor-file-tree")?.textContent).toContain("demo.md");
+
+      root.querySelector<HTMLButtonElement>('[data-menu-action="outline"]')?.click();
+      expect(root.querySelector(".editor-outline")?.textContent).toContain("typora-web demo");
+
+      root.querySelector<HTMLButtonElement>(".editor-word-count")?.click();
+      expect(root.querySelector<HTMLElement>(".editor-stats-popover")?.hidden).toBe(false);
+      expect(root.querySelector(".editor-stats-popover")?.textContent).toContain("Word Count");
     } finally {
       cleanup();
       root.remove();

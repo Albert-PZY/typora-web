@@ -159,71 +159,192 @@ html, body {
   padding-bottom: 80px;
   max-width: 920px;
 }
-.editor-toolbar {
+.editor-menu-bar {
   display: flex;
   align-items: center;
-  gap: 4px;
+  width: max-content;
+  max-width: 100%;
   margin: 0 0 10px;
-  min-height: 32px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  position: relative;
+  z-index: 14;
+}
+.editor-menu-group {
   position: relative;
 }
-.editor-toolbar button {
+.editor-menu-button,
+.editor-menu-dropdown button,
+.editor-statusbar button,
+.editor-sidebar button {
   border: none;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.68);
+  background: transparent;
   color: #666;
   cursor: pointer;
-  font: 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  padding: 7px 9px;
+  font: 13px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
-.editor-toolbar .editor-toolbar-menu-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
+.editor-menu-button {
+  min-width: 52px;
+  padding: 7px 12px;
+  border-radius: 5px;
 }
-.editor-toolbar .editor-toolbar-menu-button svg {
-  width: 17px;
-  height: 17px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
+.editor-menu-group.open .editor-menu-button,
+.editor-menu-button:hover,
+.editor-menu-button:focus-visible {
+  background: #fff;
+  color: #1f1f1f;
+  outline: none;
 }
-.editor-toolbar-menu {
+.editor-menu-dropdown {
   position: absolute;
-  top: 36px;
+  top: calc(100% + 5px);
   left: 0;
-  z-index: 12;
-  width: 132px;
+  z-index: 20;
+  width: 292px;
   padding: 6px;
   border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 7px;
+  border-radius: 8px;
   background: #fff;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
-.editor-toolbar-menu button {
-  display: block;
+.editor-menu-dropdown button {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   background: transparent;
   text-align: left;
-  line-height: 1.2;
+  line-height: 1.25;
+  border-radius: 5px;
+  padding: 7px 8px;
 }
-.editor-toolbar button:hover {
-  background: #fff;
+.editor-menu-dropdown button:hover,
+.editor-menu-dropdown button:focus-visible {
+  background: #f3f3f1;
   color: #1f1f1f;
+  outline: none;
 }
-.editor-toolbar button.active {
-  background: #1f1f1f;
-  color: #f6f4ef;
+.editor-menu-dropdown kbd {
+  color: #777;
+  font: inherit;
 }
-.editor-toolbar-sep {
-  width: 1px;
-  align-self: stretch;
-  background: rgba(0, 0, 0, 0.08);
-  margin: 4px 6px;
+.editor-menu-check {
+  color: #555;
+}
+.editor-menu-dropdown button.checked .editor-menu-check::before {
+  content: "✓";
+}
+.editor-workspace {
+  display: grid;
+  grid-template-columns: 0 minmax(0, 1fr);
+  gap: 0;
+  align-items: stretch;
+}
+.page-home.sidebar-open .editor-workspace {
+  grid-template-columns: minmax(220px, 286px) minmax(0, 1fr);
+  gap: 18px;
+}
+.editor-sidebar {
+  min-height: 420px;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 8px 10px 16px 0;
+  overflow: auto;
+}
+.editor-sidebar-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.editor-sidebar-tabs button {
+  padding: 8px 6px;
+  border-bottom: 3px solid transparent;
+  color: #777;
+}
+.editor-sidebar-tabs button.active {
+  border-bottom-color: #3d3a36;
+  color: #1f1f1f;
+  font-weight: 600;
+}
+.editor-file-tree,
+.editor-file-tree ul,
+.editor-outline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.editor-file-tree ul {
+  padding-left: 20px;
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+  margin-left: 7px;
+}
+.tree-dir,
+.tree-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 3px 6px;
+  border-radius: 4px;
+  text-align: left;
+  color: #333;
+}
+.tree-file:hover {
+  background: #eee;
+}
+.tree-icon {
+  width: 12px;
+  color: #6d5a28;
+  font-size: 10px;
+}
+.editor-outline li {
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 3px 0 3px 10px;
+  color: #333;
+  line-height: 1.35;
+}
+.outline-level-1 { margin-left: 0; font-weight: 600; }
+.outline-level-2 { margin-left: 18px; }
+.outline-level-3 { margin-left: 34px; }
+.outline-level-4,
+.outline-level-5,
+.outline-level-6 { margin-left: 50px; }
+.editor-sidebar-empty {
+  color: #999;
+  font-size: 13px;
+  margin: 12px 0;
+}
+.editor-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  margin: 10px 0 0;
+  padding: 0 2px;
+  color: #888;
+  font-size: 12px;
+}
+.editor-statusbar-left,
+.editor-statusbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+.editor-statusbar button {
+  min-width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  padding: 0 8px;
+  color: #777;
+}
+.editor-statusbar button:hover,
+.editor-statusbar button.active {
+  background: rgba(0, 0, 0, 0.05);
+  color: #1f1f1f;
 }
 .editor-toolbar-status {
   min-width: 0;
@@ -234,6 +355,34 @@ html, body {
   color: #999;
   font-size: 12px;
   text-align: right;
+}
+.editor-stats-popover {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 18;
+  width: 196px;
+  padding: 10px 0;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  text-align: center;
+}
+.editor-stats-popover dl {
+  margin: 8px 0 0;
+  padding: 8px 22px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+.editor-stats-popover dl div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 4px 0;
+}
+.editor-stats-popover dt,
+.editor-stats-popover dd {
+  margin: 0;
 }
 
 /* ─── /spec page ──────────────────────────────────────────────────── */
@@ -696,31 +845,62 @@ html, body {
 :root[data-appearance="dark"] .page-home .typora-web-source-editor {
   color: #d8d3ca;
 }
-:root[data-appearance="dark"] .editor-toolbar button {
+:root[data-appearance="dark"] .editor-menu-bar {
   background: rgba(43, 46, 51, 0.76);
+  border-color: #34373c;
+  box-shadow: none;
+}
+:root[data-appearance="dark"] .editor-menu-button,
+:root[data-appearance="dark"] .editor-menu-dropdown button,
+:root[data-appearance="dark"] .editor-statusbar button,
+:root[data-appearance="dark"] .editor-sidebar button {
   color: #aaa399;
 }
-:root[data-appearance="dark"] .editor-toolbar button:hover {
-  background: #2c2f35;
+:root[data-appearance="dark"] .editor-menu-button:hover,
+:root[data-appearance="dark"] .editor-menu-button:focus-visible,
+:root[data-appearance="dark"] .editor-menu-group.open .editor-menu-button {
+  background: rgba(43, 46, 51, 0.76);
   color: #ece7dd;
 }
-:root[data-appearance="dark"] .editor-toolbar button.active {
-  background: #ece7dd;
-  color: #202225;
-}
-:root[data-appearance="dark"] .editor-toolbar-menu {
+:root[data-appearance="dark"] .editor-menu-dropdown,
+:root[data-appearance="dark"] .editor-stats-popover {
   background: #24262a;
   border-color: #3c3f43;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
 }
-:root[data-appearance="dark"] .editor-toolbar-menu button {
-  background: transparent;
+:root[data-appearance="dark"] .editor-menu-dropdown button:hover,
+:root[data-appearance="dark"] .editor-menu-dropdown button:focus-visible,
+:root[data-appearance="dark"] .editor-statusbar button:hover,
+:root[data-appearance="dark"] .editor-statusbar button.active {
+  background: #303339;
+  color: #ece7dd;
 }
-:root[data-appearance="dark"] .editor-toolbar-menu button:hover {
+:root[data-appearance="dark"] .editor-menu-dropdown kbd,
+:root[data-appearance="dark"] .editor-statusbar,
+:root[data-appearance="dark"] .editor-sidebar-empty {
+  color: #8b8f95;
+}
+:root[data-appearance="dark"] .editor-sidebar {
+  border-right-color: #34373c;
+}
+:root[data-appearance="dark"] .editor-sidebar-tabs button.active {
+  border-bottom-color: #ece7dd;
+  color: #ece7dd;
+}
+:root[data-appearance="dark"] .editor-file-tree ul,
+:root[data-appearance="dark"] .editor-outline li {
+  border-left-color: #34373c;
+}
+:root[data-appearance="dark"] .tree-dir,
+:root[data-appearance="dark"] .tree-file,
+:root[data-appearance="dark"] .editor-outline li {
+  color: #d8d3ca;
+}
+:root[data-appearance="dark"] .tree-file:hover {
   background: #303339;
 }
-:root[data-appearance="dark"] .editor-toolbar-sep {
-  background: rgba(232, 225, 214, 0.12);
+:root[data-appearance="dark"] .editor-stats-popover dl {
+  border-top-color: #34373c;
 }
 :root[data-appearance="dark"] .editor-toolbar-status,
 :root[data-appearance="dark"] .page-home .route-footer,

@@ -21,8 +21,8 @@ export function mountNav(host: HTMLElement, current: string): () => void {
   nav.innerHTML = `
     <a class="brand" href="#/"><img src="favicon.svg" alt="" aria-hidden="true" />typora-web</a>
     <div class="nav-links">
-      <a href="#/" data-route="/" data-i18n="nav.editor"></a>
       <a href="#/specs" data-route="/specs" data-i18n="nav.specs"></a>
+      <a href="#/" data-route="/" data-i18n="nav.editor"></a>
     </div>
     <div class="nav-actions">
       <a class="ext github-link nav-icon" href="${GITHUB}" target="_blank" rel="noopener" data-i18n-title="nav.githubTitle" data-i18n-aria-label="nav.githubTitle">${GITHUB_ICON}</a>

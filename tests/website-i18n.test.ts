@@ -16,6 +16,8 @@ describe("website i18n", () => {
     setLocale("zh");
     expect(getLocale()).toBe("zh");
     expect(t("nav.editor")).toBe("编辑器");
+    expect(t("home.menu.file")).toBe("文件");
+    expect(t("home.stats.title")).toBe("字数统计");
   });
 
   test("interpolates status messages", () => {
