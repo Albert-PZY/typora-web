@@ -2,7 +2,7 @@ import type MarkdownIt from "markdown-it";
 import type StateBlock from "markdown-it/lib/rules_block/state_block.mjs";
 import type { Node as PMNode, Schema } from "prosemirror-model";
 import { Plugin, TextSelection } from "prosemirror-state";
-import { Decoration, DecorationSet, type EditorView, type NodeView } from "prosemirror-view";
+import { Decoration, DecorationSet, type NodeView } from "prosemirror-view";
 
 import { markConsumed, type InlineSpan } from "../inline-parse.ts";
 import { renderMathToHtml } from "../renderers/math.ts";
@@ -110,91 +110,30 @@ function mathBlockPlugin(md: MarkdownIt): void {
 class MathBlockView implements NodeView {
   dom: HTMLElement;
   contentDOM: HTMLElement;
-  private source: HTMLElement;
   private preview: HTMLElement;
-  private view: EditorView;
-  private getPos: () => number | undefined;
-  private hasError = false;
 
-  constructor(
-    node: PMNode,
-    view: EditorView,
-    getPos: () => number | undefined,
-  ) {
+  constructor(node: PMNode) {
     const root = document.createElement("math-block");
     const source = document.createElement("math-source");
     const preview = document.createElement("math-preview");
     root.append(source, preview);
     this.dom = root;
     this.contentDOM = source;
-    this.source = source;
     this.preview = preview;
-    this.view = view;
-    this.getPos = getPos;
-    source.hidden = true;
     preview.setAttribute("contenteditable", "false");
-    preview.addEventListener("mousedown", this.onPreviewMouseDown);
-    preview.addEventListener("click", this.onPreviewClick);
-    document.addEventListener("mousedown", this.onDocumentMouseDown);
     this.render(node);
   }
 
-  private openSource(event?: MouseEvent): void {
-    event?.preventDefault();
-    event?.stopPropagation();
-    this.dom.classList.add("math-source-open");
-    this.source.hidden = false;
-    this.moveSelectionIntoSource();
-  }
-
-  private onPreviewMouseDown = (event: MouseEvent): void => {
-    this.openSource(event);
-  };
-
-  private onPreviewClick = (event: MouseEvent): void => {
-    this.openSource(event);
-  };
-
-  private moveSelectionIntoSource(): void {
-    const pos = this.getPos();
-    if (pos == null) return;
-    try {
-      this.view.dispatch(
-        this.view.state.tr.setSelection(TextSelection.create(this.view.state.doc, pos + 1)),
-      );
-      this.view.focus();
-    } catch {}
-  }
-
-  private onDocumentMouseDown = (event: MouseEvent): void => {
-    const target = event.target as Node | null;
-    if (target && this.dom.contains(target)) return;
-    if (this.hasError) return;
-    this.dom.classList.remove("math-source-open");
-    this.source.hidden = true;
-  };
-
   private render(node: PMNode): void {
     const result = renderMathToHtml(node.textContent, true);
-    this.hasError = !result.ok;
     this.preview.dataset.mathState = result.ok ? "success" : "error";
     this.preview.innerHTML = result.html;
-    if (!result.ok) {
-      this.dom.classList.add("math-source-open");
-      this.source.hidden = false;
-    }
   }
 
   update(node: PMNode, _decorations: readonly Decoration[]): boolean {
     if (node.type.name !== "math_block") return false;
     this.render(node);
     return true;
-  }
-
-  destroy(): void {
-    this.preview.removeEventListener("mousedown", this.onPreviewMouseDown);
-    this.preview.removeEventListener("click", this.onPreviewClick);
-    document.removeEventListener("mousedown", this.onDocumentMouseDown);
   }
 
   stopEvent(event: Event): boolean {
@@ -207,7 +146,7 @@ function mathBlockNodeViewPlugin(): Plugin {
   return new Plugin({
     props: {
       nodeViews: {
-        math_block: (node, view, getPos) => new MathBlockView(node, view, getPos),
+        math_block: (node) => new MathBlockView(node),
       },
     },
   });

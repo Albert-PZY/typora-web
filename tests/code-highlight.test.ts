@@ -111,6 +111,30 @@ describe("CodeMirror 6 code editing and highlighting", () => {
     }
   });
 
+  test("language menu resets scroll to top each time it opens", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const editor = createEditor(host, { initialContent: "```js\nconsole.log(1);\n```" });
+
+    try {
+      await Promise.resolve();
+      const languageInput = host.querySelector<HTMLInputElement>(".cb-lang-input");
+      expect(languageInput).not.toBeNull();
+
+      languageInput!.dispatchEvent(new FocusEvent("focus", { bubbles: true }));
+      const menu = document.body.querySelector<HTMLElement>(".cb-lang-menu");
+      expect(menu).not.toBeNull();
+      menu!.scrollTop = 96;
+
+      languageInput!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(menu!.scrollTop).toBe(0);
+    } finally {
+      editor.destroy();
+      host.remove();
+    }
+  });
+
   test("source mode uses CodeMirror markdown highlighting instead of a textarea", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);

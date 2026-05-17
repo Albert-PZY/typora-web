@@ -34,14 +34,18 @@ function mountHtmlBlock(markdown: string): {
 }
 
 describe("CommonMark HTML blocks", () => {
-  test("source chrome uses paragraph-scale spacing", () => {
+  test("source reveal uses inline text styling instead of an input frame", () => {
     const widgetsCss = readFileSync("src/styles/widgets.css", "utf8");
 
-    expect(widgetsCss).toContain("margin: 0.25em 0 0;");
-    expect(widgetsCss).toContain("padding: 0.45em 0.6em;");
+    expect(widgetsCss).toMatch(
+      /\.ProseMirror html-block \.html-block-source \{\s+display: block;\s+margin: 0;\s+padding: 0;/,
+    );
+    expect(widgetsCss).toContain("background: transparent;");
+    expect(widgetsCss).toContain("font: inherit;");
     expect(widgetsCss).toMatch(
       /\.ProseMirror html-block \.html-block-preview \{\s+display: flow-root;\s+margin: 0;\s+padding: 0;\s+\}/,
     );
+    expect(widgetsCss).not.toContain("min-height: 4.5em;");
     expect(widgetsCss).not.toContain("margin: 8px 0 0;");
     expect(widgetsCss).not.toContain("padding: 10px 12px;");
   });
@@ -80,15 +84,19 @@ describe("CommonMark HTML blocks", () => {
       expect(block.querySelector(".html-block-preview")?.textContent).toContain("More");
       expect(block.querySelector(".html-block-preview strong")?.textContent).toBe("safe");
       expect(block.querySelector(".html-block-preview")?.innerHTML).not.toContain("onclick");
-      expect(block.querySelector<HTMLElement>(".html-block-source")?.hidden).toBe(true);
+      const source = block.querySelector<HTMLElement>(".html-block-source");
+      expect(source?.tagName).toBe("DIV");
+      expect(source?.getAttribute("contenteditable")).toBe("plaintext-only");
+      expect(source?.hidden).toBe(true);
 
       block.querySelector<HTMLElement>(".html-block-preview")?.dispatchEvent(
         new MouseEvent("click", { bubbles: true }),
       );
 
       expect(block.classList.contains("html-source-open")).toBe(true);
-      expect(block.querySelector<HTMLElement>(".html-block-source")?.hidden).toBe(false);
-      expect(block.querySelector<HTMLTextAreaElement>(".html-block-source")?.value).toContain("<details>");
+      expect(source?.hidden).toBe(false);
+      expect(source?.textContent).toContain("<details>");
+      expect(source?.querySelector("details")).toBeNull();
     } finally {
       cleanup();
     }
@@ -102,11 +110,11 @@ describe("CommonMark HTML blocks", () => {
         new MouseEvent("mousedown", { bubbles: true, cancelable: true }),
       );
 
-      const source = block.querySelector<HTMLTextAreaElement>("textarea.html-block-source");
+      const source = block.querySelector<HTMLElement>("div.html-block-source");
       expect(source).not.toBeNull();
       expect(source?.hidden).toBe(false);
 
-      source!.value = '<section onclick="alert(1)"><em>updated</em></section>';
+      source!.textContent = '<section onclick="alert(1)"><em>updated</em></section>';
       source!.dispatchEvent(new InputEvent("input", { bubbles: true }));
 
       expect(block.querySelector(".html-block-preview em")?.textContent).toBe("updated");

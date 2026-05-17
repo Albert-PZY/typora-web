@@ -245,6 +245,7 @@ class CodeBlockView implements NodeView {
   private openLanguageMenu(): void {
     this.renderLanguageMenu();
     this.menuEl.hidden = false;
+    this.menuEl.scrollTop = 0;
     this.positionLanguageMenu();
   }
 

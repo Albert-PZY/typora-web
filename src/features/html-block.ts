@@ -18,7 +18,7 @@ function isCommentOnly(raw: string): boolean {
 class HtmlBlockView implements NodeView {
   dom: HTMLElement;
   private preview: HTMLElement;
-  private source: HTMLTextAreaElement;
+  private source: HTMLElement;
   private view: EditorView;
   private getPos: () => number | undefined;
 
@@ -34,16 +34,18 @@ class HtmlBlockView implements NodeView {
     this.preview = document.createElement("div");
     this.preview.className = "html-block-preview";
     this.preview.setAttribute("contenteditable", "false");
-    this.source = document.createElement("textarea");
+    this.source = document.createElement("div");
     this.source.className = "html-block-source";
     this.source.spellcheck = false;
     this.source.setAttribute("aria-label", "HTML source");
+    this.source.setAttribute("contenteditable", "plaintext-only");
     this.source.hidden = true;
     this.preview.addEventListener("mousedown", this.onPreviewMouseDown);
     this.preview.addEventListener("click", this.onPreviewClick);
     this.source.addEventListener("input", this.onSourceInput);
     this.source.addEventListener("mousedown", this.onSourceMouseDown);
     document.addEventListener("mousedown", this.onDocumentMouseDown);
+    this.dom.append(this.preview, this.source);
     this.render(node);
   }
 
@@ -62,8 +64,8 @@ class HtmlBlockView implements NodeView {
     normalizeInteractiveHtml(preview);
     this.preview.replaceChildren(...Array.from(preview.childNodes));
 
-    if (document.activeElement !== this.source && this.source.value !== raw) {
-      this.source.value = raw;
+    if (document.activeElement !== this.source && this.source.textContent !== raw) {
+      this.source.textContent = raw;
     }
 
     if (isCommentOnly(raw)) {
@@ -71,8 +73,6 @@ class HtmlBlockView implements NodeView {
     } else {
       this.source.classList.remove("html-comment-source");
     }
-
-    this.dom.replaceChildren(this.preview, this.source);
   }
 
   private openSource(event?: MouseEvent): void {
@@ -100,7 +100,7 @@ class HtmlBlockView implements NodeView {
     if (pos == null) return;
     const node = this.view.state.doc.nodeAt(pos);
     if (!node || node.type.name !== "html_block") return;
-    const raw = this.source.value;
+    const raw = this.source.textContent ?? "";
     if (raw === rawHtml(node)) return;
     this.view.dispatch(
       this.view.state.tr.setNodeMarkup(pos, undefined, {

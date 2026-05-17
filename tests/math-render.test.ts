@@ -1,5 +1,4 @@
 import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
-import { TextSelection } from "prosemirror-state";
 
 import { createEditor } from "../src/lib.ts";
 import { renderMathToHtml } from "../src/renderers/math.ts";
@@ -19,7 +18,7 @@ describe("math renderer", () => {
     expect(result.html).toContain("\\notacommand{");
   });
 
-  test("clicking block math preview opens source and outside click hides it", () => {
+  test("block math keeps source visible beside the rendered preview", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     const editor = createEditor(host, {
@@ -32,22 +31,24 @@ describe("math renderer", () => {
       const preview = host.querySelector<HTMLElement>("math-preview");
 
       expect(block).not.toBeNull();
-      expect(source?.hidden).toBe(true);
+      expect(source?.hidden).toBe(false);
+      expect(source?.textContent).toBe("E=mc^2");
+      expect(preview?.querySelector(".katex")).not.toBeNull();
       preview?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-      expect(block?.classList.contains("math-source-open")).toBe(true);
+      expect(block?.classList.contains("math-source-open")).toBe(false);
       expect(source?.hidden).toBe(false);
 
       document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
 
       expect(block?.classList.contains("math-source-open")).toBe(false);
-      expect(source?.hidden).toBe(true);
+      expect(source?.hidden).toBe(false);
     } finally {
       editor.destroy();
       host.remove();
     }
   });
 
-  test("mousedown on rendered block math opens source before the document outside handler can hide it", () => {
+  test("mousedown on rendered block math does not flash source state", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     const editor = createEditor(host, {
@@ -60,12 +61,12 @@ describe("math renderer", () => {
       const preview = host.querySelector<HTMLElement>("math-preview");
       const renderedChild = preview?.querySelector<HTMLElement>(".katex *") ?? preview;
 
-      expect(source?.hidden).toBe(true);
+      expect(source?.hidden).toBe(false);
       renderedChild?.dispatchEvent(
         new MouseEvent("mousedown", { bubbles: true, cancelable: true }),
       );
 
-      expect(block?.classList.contains("math-source-open")).toBe(true);
+      expect(block?.classList.contains("math-source-open")).toBe(false);
       expect(source?.hidden).toBe(false);
     } finally {
       editor.destroy();
@@ -73,7 +74,7 @@ describe("math renderer", () => {
     }
   });
 
-  test("clicking KaTeX output opens block source and moves the editor selection into it", () => {
+  test("clicking KaTeX output keeps the current editor selection stable", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     const editor = createEditor(host, {
@@ -81,9 +82,7 @@ describe("math renderer", () => {
     });
 
     try {
-      editor.view.dispatch(
-        editor.view.state.tr.setSelection(TextSelection.atEnd(editor.view.state.doc)),
-      );
+      const before = editor.view.state.selection.from;
       expect(editor.view.state.selection.$from.parent.type.name).toBe("paragraph");
 
       const block = host.querySelector<HTMLElement>("math-block");
@@ -92,13 +91,13 @@ describe("math renderer", () => {
       const renderedChild = preview?.querySelector<HTMLElement>(".katex *") ?? preview;
 
       expect(block).not.toBeNull();
-      expect(source?.hidden).toBe(true);
+      expect(source?.hidden).toBe(false);
       renderedChild?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
       renderedChild?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-      expect(block?.classList.contains("math-source-open")).toBe(true);
+      expect(block?.classList.contains("math-source-open")).toBe(false);
       expect(source?.hidden).toBe(false);
-      expect(editor.view.state.selection.$from.parent.type.name).toBe("math_block");
+      expect(editor.view.state.selection.from).toBe(before);
     } finally {
       editor.destroy();
       host.remove();

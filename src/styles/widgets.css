@@ -262,21 +262,18 @@
 }
 .ProseMirror html-block .html-block-source {
   display: block;
-  width: 100%;
-  min-height: 4.5em;
-  box-sizing: border-box;
-  margin: 0.25em 0 0;
-  padding: 0.45em 0.6em;
+  margin: 0;
+  padding: 0;
   border: 0;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.035);
+  background: transparent;
   color: inherit;
   white-space: pre-wrap;
-  font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-word;
+  font: inherit;
   outline: none;
-  resize: vertical;
 }
 .ProseMirror html-block .html-block-source[hidden] { display: none; }
+.ProseMirror html-block.html-source-open .html-block-preview { display: none; }
 .ProseMirror html-block .html-comment-source {
   color: #999;
   font-style: italic;
@@ -593,7 +590,7 @@
   color: #858a91;
 }
 :root[data-appearance="dark"] .ProseMirror html-block .html-block-source {
-  background: rgba(232, 225, 214, 0.08);
+  background: transparent;
   color: #e4ded4;
 }
 :root[data-appearance="dark"] .ProseMirror math-inline[data-math-state="error"],
