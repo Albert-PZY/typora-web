@@ -96,7 +96,7 @@ feat(math): render block formulas with KaTeX
 fix(diagrams): keep Mermaid source visible on syntax errors
 fix(shortcuts): preserve hard break cursor placement
 docs(agents): document Codex repository rules
-test(themes): cover Typora selector normalization
+test(themes): cover built-in appearance switching
 chore(release): prepare v0.4-beta.1
 ```
 

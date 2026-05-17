@@ -22,12 +22,12 @@ Legend: `Supported`, `Partial`, `Backlog`.
 | Bullet lists and ordered lists | Supported | Common wrapping shortcuts are covered; complex loose-list fidelity remains a future target. |
 | Task lists | Supported | Task markers render and round-trip. |
 | Indented code blocks | Partial | Parses successfully but serializes as fenced code. |
-| Fenced code blocks | Supported | Backtick fences with optional info string and editable language chrome. |
+| Fenced code blocks | Supported | Backtick fences with optional info string, editable language chrome, and CodeMirror 5 token highlighting for common languages. |
 | Thematic breaks | Supported | Serializes as `---`. |
 | Tables | Supported | GFM table alignment is represented. |
 | YAML front matter | Supported | Document-leading front matter is parsed and serialized. |
 | Reference link definitions | Partial | Live entry is supported, but markdown-it consumes definitions during parse. |
-| HTML blocks | Backlog | Requires a sanitizer and explicit trust policy before enabling. |
+| HTML blocks | Supported | CommonMark HTML block tokens render through DOMPurify and serialize from the original source. |
 | Math blocks `$$ ... $$` | Supported | KaTeX preview, editable source, serializer preservation, and invalid-TeX containment. |
 | Mermaid fences | Supported | `mermaid` code fences render lazy diagram panels and preserve source. |
 | Other diagram engines | Backlog | Typora also supports Flowchart.js, sequence diagrams, Vega, and Vega-Lite; this project currently supports Mermaid only. |
@@ -68,13 +68,14 @@ Legend: `Supported`, `Partial`, `Backlog`.
 | Focus mode | Supported | API methods and `F8` toggle active-block focus. |
 | Typewriter mode | Supported | API methods and `F9` request cursor centering. |
 | Common editing shortcuts | Supported | Source-preserving commands cover inline marks, links, breaks, headings, quote/list wrapping, code block, math block, undo, and redo. |
-| Custom Typora CSS themes | Supported | Runtime import, scoped selector normalization, local persistence, and clear are implemented. |
+| Built-in light/dark appearance | Supported | The website and Typora-flavored editor theme use `data-appearance` for default light and dark styles. |
+| Custom Typora CSS theme import | Backlog | Runtime external CSS theme import has been removed; built-in styles are the supported path for now. |
 | Local `.md` open/save | Supported | File System Access API is used when available; open falls back to a native file input and Save As falls back to a download. |
 | Lossless parser/serializer round-trip | Supported | Covered across the spec suite for supported syntax. |
 
 ## Risk Areas For Future Parity
 
-- HTML requires a deliberate sanitizer and trust model before it can safely match Typora.
+- Inline HTML still needs a deliberate sanitizer and trust model before it can safely match Typora.
 - Non-Mermaid diagram engines need separate lazy renderer adapters and error panels.
 - Reference definitions need a parser strategy that preserves definitions instead of allowing markdown-it to consume them.
 - Exact Typora list looseness, indentation shape, and alternate ordered-list markers need more fixture coverage.

@@ -4,7 +4,7 @@
 
 Markdown looks like a finished document while you write it. Italic renders as *italic* the moment you close the asterisks. Headings appear at their final size as soon as you start typing. Source markers like `*` and `#` fade out when the cursor moves away and come back when you click in.
 
-Markdown syntax is constrained by [CommonMark 0.31.2][cm]. Typora extensions, GitHub-flavored tables/task items, math, Mermaid, and theme importing are layered on top as explicit, tested compatibility features.
+Markdown syntax is constrained by [CommonMark 0.31.2][cm]. Typora extensions, GitHub-flavored tables/task items, math, Mermaid, CodeMirror-based code highlighting, and built-in light/dark appearances are layered on top as explicit, tested compatibility features.
 
 It's also an experiment. Every line of source was written by an AI agent through chat. The human only chats; nothing gets typed directly into source files. To keep the agent productive at this scale, each supported syntax is described as a **spec**: a seed text, an event sequence, and the expected rendered output. Each spec compiles to a test the agent has to make pass. The result is a usable editor and a record of how far agent coding holds up on a serious project.
 
@@ -22,7 +22,7 @@ Task lists hold their state visually, and heavier Typora extensions render in pl
 - [x] sanitized CommonMark HTML blocks
 - [x] inline and block math (KaTeX-based)
 - [x] diagram fences like Mermaid (lazy-rendered)
-- [x] focus mode, typewriter mode, common editing shortcuts, bilingual website chrome, custom Typora CSS themes, and local `.md` open/save
+- [x] CodeMirror 5 code-block highlighting, focus mode, typewriter mode, common editing shortcuts, bilingual website chrome, built-in light/dark themes, and local `.md` open/save
 
 Lists nest, and exit on a triple-Enter staircase the way Typora does:
 
@@ -74,16 +74,15 @@ Controller methods:
 | `editor.saveMarkdownFile()` | save to the current local file handle, or fall back to Save As |
 | `editor.saveMarkdownFileAs()` | save through the File System Access API, or download `untitled.md` when unavailable |
 | `editor.getCurrentFileName()` | current local file name, if one has been opened or saved |
-| `editor.importThemeFile(file)` | import and persist a `.css` Typora theme file |
-| `editor.applyThemeCss(name, cssText)` | apply scoped Typora theme CSS directly |
-| `editor.clearCustomTheme()` / `editor.getCustomThemeName()` | clear or inspect the active custom theme |
 | `editor.focus()` | focus the active surface |
 | `editor.destroy()` | tear down |
 | `editor.view` | underlying ProseMirror EditorView. No stability guarantee on this access. |
 
 Options: `initialContent`, `onChange(md)`, `onFocus()`, `onBlur()`.
 
-Two themes ship: `typora-web/theme-typora.css` (default look on the live demo) and `typora-web/theme-github.css`. Import one. Typora `.css` theme files can also be imported at runtime. This compatibility layer is experimental: common selectors such as `#write`, `body`, `html`, `:root`, `.md-fences`, `.md-inline-math`, and `.md-toc` are scoped to the editor wrapper, and document-level background/color rules are mirrored onto the editor surface so self-contained dark themes can affect the paper background. Browser file imports cannot safely resolve sibling CSS files referenced by relative `@import` or `url(...)`, so multi-file Typora themes may still need to be flattened into one CSS file before import.
+Two CSS themes ship: `typora-web/theme-typora.css` (default look on the live demo) and `typora-web/theme-github.css`. Import one. The Typora-flavored theme includes built-in light and dark appearances keyed by `data-appearance="light"` or `data-appearance="dark"` on the document root; the demo website exposes this as the top-right appearance toggle. Runtime import of external Typora `.css` theme files has been removed so the editor keeps a small, predictable style surface.
+
+Fenced code blocks use [CodeMirror 5 runmode][cm5-runmode] and render official CodeMirror token classes such as `cm-keyword`, `cm-string`, and `cm-comment` inside the editable code block. Unknown languages stay plain instead of being guessed.
 
 Common editing shortcuts include `Mod-b`, `Mod-i`, `Mod-k`, `Shift-Enter`, `Mod-0`..`Mod-6`, `Mod-Shift-q`, `Mod-Shift-7`, `Mod-Shift-8`, `Mod-Shift-k`, `Mod-Shift-m`, undo, and redo. `Mod` means `Cmd` on macOS and `Ctrl` elsewhere.
 
@@ -103,7 +102,7 @@ Legend: :white_check_mark: stable · :yellow_circle: partial (note explains what
 | ordered list `1.` | :white_check_mark: | |
 | nested list | :white_check_mark: | |
 | task list `- [ ]` / `- [x]` | :white_check_mark: | |
-| fenced code ```` ``` ```` | :white_check_mark: | |
+| fenced code ```` ``` ```` | :white_check_mark: | editable language chrome plus CodeMirror 5 token highlighting for common languages |
 | indented code (4-space) | :yellow_circle: | parses fine; saves as fenced (shape attr not yet preserved) |
 | thematic break `---` | :white_check_mark: | |
 | table `\| a \| b \|` | :white_check_mark: | |
@@ -156,7 +155,8 @@ Legend: :white_check_mark: stable · :yellow_circle: partial (note explains what
 | focus mode | :white_check_mark: | API + `F8`; inactive blocks dim while editing |
 | typewriter mode | :white_check_mark: | API + `F9`; active cursor is scrolled toward the viewport center |
 | common editing shortcuts | :white_check_mark: | source-preserving Markdown commands |
-| custom Typora CSS themes | :yellow_circle: | experimental runtime import, scoped normalization, dark background mirroring, persistence, and clear; multi-file themes with relative imports remain limited by browser file access |
+| built-in light/dark appearance | :white_check_mark: | website toggle plus `data-appearance` styles for page chrome, editor surface, widgets, and CodeMirror tokens |
+| custom Typora CSS theme import | :pause_button: | intentionally removed; use the built-in default styles for now |
 | website i18n | :white_check_mark: | English/Chinese switch for page chrome; editor document content is never translated |
 | local `.md` open/save | :white_check_mark: | File System Access API where available; open falls back to file input and Save As falls back to download |
 | lossless `parse → serialize → parse` | :white_check_mark: | |
@@ -180,4 +180,5 @@ The "report" link on every card in the [live demo's catalog][demo-specs] prefill
 [demo]: https://albert-pzy.github.io/typora-web/ "live demo"
 [demo-specs]: https://albert-pzy.github.io/typora-web/#/specs "spec catalog"
 [cm]: https://spec.commonmark.org/0.31.2/ "CommonMark 0.31.2"
+[cm5-runmode]: https://codemirror.net/5/doc/manual.html#addon_runmode "CodeMirror 5 runmode"
 [pmguide]: https://prosemirror.net/docs/guide/ "ProseMirror Guide"
