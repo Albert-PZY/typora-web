@@ -16,9 +16,34 @@ describe("custom theme support", () => {
     const normalized = normalizeTyporaThemeCss(css, ".scope");
 
     expect(normalized).not.toContain("@include-when-export");
-    expect(normalized).toContain(".scope { color: red; }");
+    expect(normalized).toContain(
+      ".scope.typora-web-theme-root, .scope .ProseMirror, .scope .typora-web-source { color: red; }",
+    );
     expect(normalized).toContain(".scope .ProseMirror { max-width: 860px; }");
     expect(normalized).toContain(".scope .ProseMirror pre { background: #eee; }");
+  });
+
+  test("maps document-level dark theme backgrounds onto the editor surface", () => {
+    const css = [
+      "@media (prefers-color-scheme: dark) {",
+      "  html, body { background: #111; color: #eee; }",
+      "  #write { background: #111; color: #eee; }",
+      "}",
+      "@keyframes pulse {",
+      "  from { opacity: 0; }",
+      "  to { opacity: 1; }",
+      "}",
+    ].join("\n");
+
+    const normalized = normalizeTyporaThemeCss(css, ".scope");
+
+    expect(normalized).toContain("@media (prefers-color-scheme: dark)");
+    expect(normalized).toContain(
+      ".scope.typora-web-theme-root, .scope .ProseMirror, .scope .typora-web-source { background: #111; color: #eee; }",
+    );
+    expect(normalized).toContain(".scope .ProseMirror { background: #111; color: #eee; }");
+    expect(normalized).toContain("from { opacity: 0; }");
+    expect(normalized).not.toContain(".scope from");
   });
 
   test("applies and clears a scoped style element", () => {
