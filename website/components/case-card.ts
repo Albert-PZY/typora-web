@@ -26,6 +26,7 @@ import { schema } from "../../src/schema.ts";
 import { feedEvent, type Event } from "../../specs/events.ts";
 import { pretty } from "../../specs/pretty.ts";
 import { fakeView } from "../../specs/sim.ts";
+import { onLocaleChange, t, translateTree } from "../i18n.ts";
 
 export type Checkpoint = { at: number; expect: string };
 
@@ -43,7 +44,7 @@ export type CaseCard = {
   destroy(): void;
 };
 
-const ISSUE_URL = "https://github.com/yuyz0112/typora-web/issues/new";
+const ISSUE_URL = "https://github.com/Albert-PZY/typora-web/issues/new";
 const PLAY_INTERVAL_MS = 250;
 
 function escapeHTML(s: string): string {
@@ -57,7 +58,7 @@ function escapeHTML(s: string): string {
 }
 
 function previewSeed(seed: string): string {
-  if (!seed) return "(empty)";
+  if (!seed) return t("case.emptySeed");
   const oneLine = seed.replace(/\n/g, "↵");
   return oneLine.length > 56 ? oneLine.slice(0, 53) + "…" : oneLine;
 }
@@ -135,35 +136,35 @@ export function createCaseCard(script: Script): CaseCard {
       <div class="case-title">
         <span class="case-label"></span>
         <span class="case-meta">
-          <span class="case-seed" title="seed"></span>
-          <span class="case-evcount" title="events"></span>
+          <span class="case-seed" data-i18n-title="case.seedTitle"></span>
+          <span class="case-evcount" data-i18n-title="case.eventsTitle"></span>
         </span>
       </div>
       <div class="case-controls">
         <span class="case-progress"></span>
         <code class="case-next"></code>
-        <button data-act="reset" title="Reset">↺</button>
-        <button data-act="step" title="Step">▸</button>
-        <button data-act="play" title="Play">▶</button>
+        <button data-act="reset" data-i18n-title="case.resetTitle">↺</button>
+        <button data-act="step" data-i18n-title="case.stepTitle">▸</button>
+        <button data-act="play" data-i18n-title="case.playTitle">▶</button>
       </div>
     </div>
     <div class="case-body">
       <div class="case-editor"></div>
       <div class="dump-wrap case-pretty-wrap">
-        <button class="copy-btn copy-btn-corner" data-copy="pretty">copy</button>
+        <button class="copy-btn copy-btn-corner" data-copy="pretty" data-i18n="case.copy"></button>
         <pre class="case-pretty wrap-pre"></pre>
       </div>
       ${checkpoints.length
         ? `<details class="case-checkpoints"${anyMismatch ? " open" : ""}>
             <summary>
-              <span class="cp-summary-label">checkpoints</span>
+              <span class="cp-summary-label" data-i18n="case.checkpoints"></span>
               <span class="cp-summary-stat"></span>
             </summary>
             <ol class="cp-list"></ol>
           </details>`
         : ""}
       <div class="case-report-row">
-        <a class="case-issue" target="_blank" rel="noopener">report</a>
+        <a class="case-issue" target="_blank" rel="noopener" data-i18n="case.report"></a>
       </div>
     </div>
   `;
@@ -172,8 +173,8 @@ export function createCaseCard(script: Script): CaseCard {
   const $seed = el.querySelector(".case-seed") as HTMLElement;
   $seed.textContent = previewSeed(script.seed);
   if (!script.seed) $seed.classList.add("is-empty");
-  (el.querySelector(".case-evcount") as HTMLElement).textContent =
-    `${script.events.length} ev`;
+  const $evcount = el.querySelector(".case-evcount") as HTMLElement;
+  $evcount.textContent = t("case.eventCount", { count: script.events.length });
 
   const $editor = el.querySelector(".case-editor") as HTMLDivElement;
   const $pretty = el.querySelector(".case-pretty") as HTMLElement;
@@ -185,6 +186,11 @@ export function createCaseCard(script: Script): CaseCard {
   const $issue = el.querySelector(".case-issue") as HTMLAnchorElement;
   const $cpList = el.querySelector(".cp-list") as HTMLOListElement | null;
   const $cpStat = el.querySelector(".cp-summary-stat") as HTMLElement | null;
+  const applyLocale = (): void => {
+    translateTree(el);
+    $seed.textContent = previewSeed(script.seed);
+    $evcount.textContent = t("case.eventCount", { count: script.events.length });
+  };
 
   if ($cpList) {
     $cpList.innerHTML = checkpoints
@@ -323,18 +329,21 @@ export function createCaseCard(script: Script): CaseCard {
     navigator.clipboard?.writeText(text).then(
       () => {
         const orig = btn.textContent;
-        btn.textContent = "copied";
+        btn.textContent = t("case.copied");
         setTimeout(() => { btn.textContent = orig; }, 900);
       },
       () => {},
     );
   });
 
+  applyLocale();
+  const cleanupLocale = onLocaleChange(applyLocale);
   mount();
 
   return {
     el,
     destroy(): void {
+      cleanupLocale();
       setPlaying(false);
       if (view) view.destroy();
     },
