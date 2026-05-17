@@ -1,6 +1,6 @@
 import type { Node as PMNode, Schema } from "prosemirror-model";
 import { Plugin } from "prosemirror-state";
-import type { NodeView } from "prosemirror-view";
+import type { EditorView, NodeView } from "prosemirror-view";
 
 import { sanitizeHtml } from "../sanitize.ts";
 import type { FeatureSpec } from "./_types.ts";
@@ -18,17 +18,31 @@ function isCommentOnly(raw: string): boolean {
 class HtmlBlockView implements NodeView {
   dom: HTMLElement;
   private preview: HTMLElement;
-  private source: HTMLElement;
+  private source: HTMLTextAreaElement;
+  private view: EditorView;
+  private getPos: () => number | undefined;
 
-  constructor(node: PMNode) {
+  constructor(
+    node: PMNode,
+    view: EditorView,
+    getPos: () => number | undefined,
+  ) {
     this.dom = document.createElement("html-block");
     this.dom.setAttribute("contenteditable", "false");
+    this.view = view;
+    this.getPos = getPos;
     this.preview = document.createElement("div");
     this.preview.className = "html-block-preview";
-    this.source = document.createElement("pre");
+    this.preview.setAttribute("contenteditable", "false");
+    this.source = document.createElement("textarea");
     this.source.className = "html-block-source";
+    this.source.spellcheck = false;
+    this.source.setAttribute("aria-label", "HTML source");
     this.source.hidden = true;
+    this.preview.addEventListener("mousedown", this.onPreviewMouseDown);
     this.preview.addEventListener("click", this.onPreviewClick);
+    this.source.addEventListener("input", this.onSourceInput);
+    this.source.addEventListener("mousedown", this.onSourceMouseDown);
     document.addEventListener("mousedown", this.onDocumentMouseDown);
     this.render(node);
   }
@@ -48,9 +62,9 @@ class HtmlBlockView implements NodeView {
     normalizeInteractiveHtml(preview);
     this.preview.replaceChildren(...Array.from(preview.childNodes));
 
-    const code = document.createElement("code");
-    code.textContent = raw;
-    this.source.replaceChildren(code);
+    if (document.activeElement !== this.source && this.source.value !== raw) {
+      this.source.value = raw;
+    }
 
     if (isCommentOnly(raw)) {
       this.source.classList.add("html-comment-source");
@@ -61,9 +75,39 @@ class HtmlBlockView implements NodeView {
     this.dom.replaceChildren(this.preview, this.source);
   }
 
-  private onPreviewClick = (): void => {
+  private openSource(event?: MouseEvent): void {
+    event?.preventDefault();
+    event?.stopPropagation();
     this.dom.classList.add("html-source-open");
     this.source.hidden = false;
+    try { this.source.focus(); } catch {}
+  }
+
+  private onPreviewMouseDown = (event: MouseEvent): void => {
+    this.openSource(event);
+  };
+
+  private onPreviewClick = (event: MouseEvent): void => {
+    this.openSource(event);
+  };
+
+  private onSourceMouseDown = (event: MouseEvent): void => {
+    event.stopPropagation();
+  };
+
+  private onSourceInput = (): void => {
+    const pos = this.getPos();
+    if (pos == null) return;
+    const node = this.view.state.doc.nodeAt(pos);
+    if (!node || node.type.name !== "html_block") return;
+    const raw = this.source.value;
+    if (raw === rawHtml(node)) return;
+    this.view.dispatch(
+      this.view.state.tr.setNodeMarkup(pos, undefined, {
+        ...node.attrs,
+        raw,
+      }),
+    );
   };
 
   private onDocumentMouseDown = (event: MouseEvent): void => {
@@ -74,8 +118,16 @@ class HtmlBlockView implements NodeView {
   };
 
   destroy(): void {
+    this.preview.removeEventListener("mousedown", this.onPreviewMouseDown);
     this.preview.removeEventListener("click", this.onPreviewClick);
+    this.source.removeEventListener("input", this.onSourceInput);
+    this.source.removeEventListener("mousedown", this.onSourceMouseDown);
     document.removeEventListener("mousedown", this.onDocumentMouseDown);
+  }
+
+  stopEvent(event: Event): boolean {
+    const target = event.target as Node;
+    return this.preview.contains(target) || this.source.contains(target);
   }
 
   ignoreMutation(): boolean {
@@ -102,7 +154,7 @@ function htmlBlockPlugin(): Plugin {
   return new Plugin({
     props: {
       nodeViews: {
-        html_block: (node) => new HtmlBlockView(node),
+        html_block: (node, view, getPos) => new HtmlBlockView(node, view, getPos),
       },
     },
   });

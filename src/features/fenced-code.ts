@@ -157,9 +157,9 @@ class CodeBlockView implements NodeView {
     menu.className = "cb-lang-menu";
     menu.hidden = true;
     menu.setAttribute("role", "listbox");
-    chrome.appendChild(menu);
     pre.appendChild(chrome);
     root.append(pre, diagram);
+    document.body.appendChild(menu);
 
     this.dom = root;
     this.contentDOM = code;
@@ -187,6 +187,8 @@ class CodeBlockView implements NodeView {
     input.addEventListener("mousedown", (e) => e.stopPropagation());
     menu.addEventListener("mousedown", this.onMenuMouseDown);
     document.addEventListener("mousedown", this.onDocumentMouseDown);
+    window.addEventListener("resize", this.onViewportChange);
+    window.addEventListener("scroll", this.onViewportChange, true);
     // Apply initial decorations (PM doesn't call update() right after
     // construction with the starting deco set — do it manually).
     this.applyDecorations(decorations);
@@ -243,10 +245,39 @@ class CodeBlockView implements NodeView {
   private openLanguageMenu(): void {
     this.renderLanguageMenu();
     this.menuEl.hidden = false;
+    this.positionLanguageMenu();
   }
 
   private hideLanguageMenu(): void {
     this.menuEl.hidden = true;
+  }
+
+  private onViewportChange = (): void => {
+    if (!this.menuEl.hidden) this.positionLanguageMenu();
+  };
+
+  private positionLanguageMenu(): void {
+    const rect = this.inputEl.getBoundingClientRect();
+    const margin = 8;
+    const gap = 6;
+    const width = 220;
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || width + margin * 2;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 600;
+    const spaceBelow = Math.max(0, viewportHeight - rect.bottom - margin - gap);
+    const spaceAbove = Math.max(0, rect.top - margin - gap);
+    const openAbove = spaceBelow < 160 && spaceAbove > spaceBelow;
+    const maxHeight = Math.max(96, Math.min(260, openAbove ? spaceAbove : spaceBelow));
+    const maxLeft = Math.max(margin, viewportWidth - width - margin);
+    const left = Math.min(Math.max(margin, rect.right - width), maxLeft);
+    const top = openAbove
+      ? Math.max(margin, rect.top - gap - maxHeight)
+      : Math.min(viewportHeight - margin - maxHeight, rect.bottom + gap);
+
+    this.menuEl.style.position = "fixed";
+    this.menuEl.style.width = `${width}px`;
+    this.menuEl.style.left = `${left}px`;
+    this.menuEl.style.top = `${Math.max(margin, top)}px`;
+    this.menuEl.style.maxHeight = `${maxHeight}px`;
   }
 
   private renderLanguageMenu(): void {
@@ -290,6 +321,7 @@ class CodeBlockView implements NodeView {
 
   private onDocumentMouseDown = (event: MouseEvent): void => {
     const target = event.target as Node | null;
+    if (target && this.menuEl.contains(target)) return;
     if (target && this.dom.contains(target)) return;
     this.hideLanguageMenu();
     if (!this.dom.classList.contains("diagram-error")) {
@@ -433,6 +465,7 @@ class CodeBlockView implements NodeView {
     const target = e.target as Node;
     return (
       this.chromeEl.contains(target) ||
+      this.menuEl.contains(target) ||
       this.codeMountEl.contains(target) ||
       this.diagramEl.contains(target)
     );
@@ -471,6 +504,9 @@ class CodeBlockView implements NodeView {
     this.inputEl.removeEventListener("keydown", this.onInputKeyDown);
     this.menuEl.removeEventListener("mousedown", this.onMenuMouseDown);
     document.removeEventListener("mousedown", this.onDocumentMouseDown);
+    window.removeEventListener("resize", this.onViewportChange);
+    window.removeEventListener("scroll", this.onViewportChange, true);
+    this.menuEl.remove();
   }
 }
 

@@ -47,6 +47,32 @@ describe("math renderer", () => {
     }
   });
 
+  test("mousedown on rendered block math opens source before the document outside handler can hide it", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const editor = createEditor(host, {
+      initialContent: "$$\nE=mc^2\n$$",
+    });
+
+    try {
+      const block = host.querySelector<HTMLElement>("math-block");
+      const source = host.querySelector<HTMLElement>("math-source");
+      const preview = host.querySelector<HTMLElement>("math-preview");
+      const renderedChild = preview?.querySelector<HTMLElement>(".katex *") ?? preview;
+
+      expect(source?.hidden).toBe(true);
+      renderedChild?.dispatchEvent(
+        new MouseEvent("mousedown", { bubbles: true, cancelable: true }),
+      );
+
+      expect(block?.classList.contains("math-source-open")).toBe(true);
+      expect(source?.hidden).toBe(false);
+    } finally {
+      editor.destroy();
+      host.remove();
+    }
+  });
+
   test("clicking KaTeX output opens block source and moves the editor selection into it", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);

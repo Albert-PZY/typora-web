@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
 
 import {
@@ -52,13 +54,58 @@ describe("CodeMirror 6 code editing and highlighting", () => {
       expect(languageInput?.value).toBe("js");
       languageInput?.dispatchEvent(new FocusEvent("focus", { bubbles: true }));
 
-      const menu = host.querySelector<HTMLElement>(".cb-lang-menu");
+      const menu = document.body.querySelector<HTMLElement>(".cb-lang-menu");
       expect(host.querySelector("datalist.cb-lang-options")).toBeNull();
+      expect(host.querySelector(".cb-lang-menu")).toBeNull();
       expect(menu).not.toBeNull();
       expect(menu?.hidden).toBe(false);
       expect(menu?.querySelector("[data-lang-name='Python']")?.textContent).toBe("Python");
       expect(menu?.textContent).not.toContain("ecmascript");
     } finally {
+      editor.destroy();
+      host.remove();
+    }
+  });
+
+  test("language menu is viewport-positioned above the input near the bottom edge", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const oldInnerHeight = Object.getOwnPropertyDescriptor(window, "innerHeight");
+    const oldInnerWidth = Object.getOwnPropertyDescriptor(window, "innerWidth");
+    const editor = createEditor(host, { initialContent: "```js\nconsole.log(1);\n```" });
+
+    try {
+      await Promise.resolve();
+      Object.defineProperty(window, "innerHeight", { configurable: true, value: 600 });
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: 320 });
+      const languageInput = host.querySelector<HTMLInputElement>(".cb-lang-input");
+      expect(languageInput).not.toBeNull();
+      languageInput!.getBoundingClientRect = () => ({
+        x: 176,
+        y: 564,
+        top: 564,
+        right: 280,
+        bottom: 588,
+        left: 176,
+        width: 104,
+        height: 24,
+        toJSON: () => ({}),
+      });
+
+      languageInput!.dispatchEvent(new FocusEvent("focus", { bubbles: true }));
+
+      const menu = document.body.querySelector<HTMLElement>(".cb-lang-menu");
+      expect(menu).not.toBeNull();
+      expect(menu?.style.position).toBe("fixed");
+      expect(readFileSync("src/styles/widgets.css", "utf8")).toMatch(
+        /\.cb-lang-menu \{\s+position: fixed;\s+box-sizing: border-box;/,
+      );
+      expect(Number.parseFloat(menu!.style.top)).toBeLessThan(564);
+      expect(Number.parseFloat(menu!.style.left)).toBeGreaterThanOrEqual(8);
+      expect(Number.parseFloat(menu!.style.maxHeight)).toBeGreaterThan(0);
+    } finally {
+      if (oldInnerHeight) Object.defineProperty(window, "innerHeight", oldInnerHeight);
+      if (oldInnerWidth) Object.defineProperty(window, "innerWidth", oldInnerWidth);
       editor.destroy();
       host.remove();
     }

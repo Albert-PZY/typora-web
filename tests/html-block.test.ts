@@ -11,6 +11,7 @@ import { serialize } from "../src/serializer.ts";
 
 function mountHtmlBlock(markdown: string): {
   block: HTMLElement;
+  view: EditorView;
   cleanup: () => void;
 } {
   const mount = document.createElement("div");
@@ -24,6 +25,7 @@ function mountHtmlBlock(markdown: string): {
   }
   return {
     block,
+    view,
     cleanup: () => {
       view.destroy();
       mount.remove();
@@ -35,8 +37,11 @@ describe("CommonMark HTML blocks", () => {
   test("source chrome uses paragraph-scale spacing", () => {
     const widgetsCss = readFileSync("src/styles/widgets.css", "utf8");
 
-    expect(widgetsCss).toContain("margin: 0.35em 0 0;");
+    expect(widgetsCss).toContain("margin: 0.25em 0 0;");
     expect(widgetsCss).toContain("padding: 0.45em 0.6em;");
+    expect(widgetsCss).toMatch(
+      /\.ProseMirror html-block \.html-block-preview \{\s+display: flow-root;\s+margin: 0;\s+padding: 0;\s+\}/,
+    );
     expect(widgetsCss).not.toContain("margin: 8px 0 0;");
     expect(widgetsCss).not.toContain("padding: 10px 12px;");
   });
@@ -83,7 +88,30 @@ describe("CommonMark HTML blocks", () => {
 
       expect(block.classList.contains("html-source-open")).toBe(true);
       expect(block.querySelector<HTMLElement>(".html-block-source")?.hidden).toBe(false);
-      expect(block.querySelector(".html-block-source")?.textContent).toContain("<details>");
+      expect(block.querySelector<HTMLTextAreaElement>(".html-block-source")?.value).toContain("<details>");
+    } finally {
+      cleanup();
+    }
+  });
+
+  test("revealed source is editable and updates the sanitized preview plus markdown", () => {
+    const { block, view, cleanup } = mountHtmlBlock('<div class="note">hello</div>');
+
+    try {
+      block.querySelector<HTMLElement>(".html-block-preview")?.dispatchEvent(
+        new MouseEvent("mousedown", { bubbles: true, cancelable: true }),
+      );
+
+      const source = block.querySelector<HTMLTextAreaElement>("textarea.html-block-source");
+      expect(source).not.toBeNull();
+      expect(source?.hidden).toBe(false);
+
+      source!.value = '<section onclick="alert(1)"><em>updated</em></section>';
+      source!.dispatchEvent(new InputEvent("input", { bubbles: true }));
+
+      expect(block.querySelector(".html-block-preview em")?.textContent).toBe("updated");
+      expect(block.querySelector(".html-block-preview")?.innerHTML).not.toContain("onclick");
+      expect(serialize(view.state.doc)).toBe('<section onclick="alert(1)"><em>updated</em></section>');
     } finally {
       cleanup();
     }

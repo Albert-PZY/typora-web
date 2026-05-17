@@ -133,17 +133,26 @@ class MathBlockView implements NodeView {
     this.getPos = getPos;
     source.hidden = true;
     preview.setAttribute("contenteditable", "false");
+    preview.addEventListener("mousedown", this.onPreviewMouseDown);
     preview.addEventListener("click", this.onPreviewClick);
     document.addEventListener("mousedown", this.onDocumentMouseDown);
     this.render(node);
   }
 
-  private onPreviewClick = (event: MouseEvent): void => {
-    event.preventDefault();
-    event.stopPropagation();
+  private openSource(event?: MouseEvent): void {
+    event?.preventDefault();
+    event?.stopPropagation();
     this.dom.classList.add("math-source-open");
     this.source.hidden = false;
     this.moveSelectionIntoSource();
+  }
+
+  private onPreviewMouseDown = (event: MouseEvent): void => {
+    this.openSource(event);
+  };
+
+  private onPreviewClick = (event: MouseEvent): void => {
+    this.openSource(event);
   };
 
   private moveSelectionIntoSource(): void {
@@ -183,8 +192,14 @@ class MathBlockView implements NodeView {
   }
 
   destroy(): void {
+    this.preview.removeEventListener("mousedown", this.onPreviewMouseDown);
     this.preview.removeEventListener("click", this.onPreviewClick);
     document.removeEventListener("mousedown", this.onDocumentMouseDown);
+  }
+
+  stopEvent(event: Event): boolean {
+    const target = event.target as Node;
+    return this.preview.contains(target);
   }
 }
 
