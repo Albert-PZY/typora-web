@@ -82,4 +82,33 @@ describe("editor modes", () => {
       host.remove();
     }
   });
+
+  test("source mode toggle preserves the current page scroll position", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const editor = createEditor(host, {
+      initialContent: Array.from({ length: 20 }, (_, i) => `paragraph ${i + 1}`).join("\n\n"),
+    });
+    const oldScrollTo = window.scrollTo;
+    const oldScrollY = Object.getOwnPropertyDescriptor(window, "scrollY");
+    const calls: number[] = [];
+
+    try {
+      Object.defineProperty(window, "scrollY", { configurable: true, value: 320 });
+      window.scrollTo = ((arg: ScrollToOptions | number) => {
+        calls.push(typeof arg === "number" ? arg : Number(arg.top ?? 0));
+      }) as typeof window.scrollTo;
+
+      editor.toggleSource();
+      editor.toggleSource();
+
+      expect(calls).toContain(320);
+      expect(calls[calls.length - 1]).toBe(320);
+    } finally {
+      window.scrollTo = oldScrollTo;
+      if (oldScrollY) Object.defineProperty(window, "scrollY", oldScrollY);
+      editor.destroy();
+      host.remove();
+    }
+  });
 });

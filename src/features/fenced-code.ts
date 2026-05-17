@@ -13,7 +13,11 @@ import {
 } from "prosemirror-view";
 
 import { leaveLineDraft } from "../block-draft.ts";
-import { highlightCode } from "../code-highlighter.ts";
+import {
+  CODE_LANGUAGE_OPTIONS,
+  createEmbeddedCodeMirrorEditor,
+  type EmbeddedCodeMirrorEditor,
+} from "../code-highlighter.ts";
 import { createLatestTaskScheduler } from "../renderers/latest-task.ts";
 import { mermaidRenderer } from "../renderers/mermaid.ts";
 import type { FeatureSpec } from "./_types.ts";
@@ -94,13 +98,16 @@ function codeBlockPosAt(state: EditorState, pos: number): number | null {
 class CodeBlockView implements NodeView {
   dom: HTMLElement;
   contentDOM: HTMLElement;
+  private codeMountEl: HTMLElement;
   private chromeEl: HTMLElement;
   private inputEl: HTMLInputElement;
   private diagramEl: HTMLElement;
   private view: EditorView;
   private getPos: () => number | undefined;
+  private cm: EmbeddedCodeMirrorEditor;
   private diagramScheduler = createLatestTaskScheduler(DIAGRAM_RENDER_DELAY_MS);
   private renderedDiagramKey = "";
+  private syncingFromProseMirror = false;
 
   constructor(
     node: PMNode,
@@ -111,11 +118,19 @@ class CodeBlockView implements NodeView {
     this.view = view;
     this.getPos = getPos;
     const pre = document.createElement("pre");
+    pre.setAttribute("contenteditable", "false");
     const lang = (node.attrs.lang as string) ?? "";
     if (lang) pre.setAttribute("data-lang", lang);
+    pre.dataset.code = node.textContent;
+
     const code = document.createElement("code");
-    code.className = "cm-s-inner cm-s-default";
+    code.className = "pm-code-content";
+    code.setAttribute("aria-hidden", "true");
     pre.appendChild(code);
+
+    const codeMount = document.createElement("div");
+    codeMount.className = "typora-web-code-editor";
+    pre.appendChild(codeMount);
 
     const diagram = document.createElement("div");
     diagram.className = "diagram-panel";
@@ -130,15 +145,38 @@ class CodeBlockView implements NodeView {
     input.placeholder = "lang";
     input.value = lang;
     input.spellcheck = false;
+    const listId = `cb-lang-options-${Math.random().toString(36).slice(2)}`;
+    input.setAttribute("list", listId);
     chrome.appendChild(input);
+    const list = document.createElement("datalist");
+    list.className = "cb-lang-options";
+    list.id = listId;
+    for (const option of CODE_LANGUAGE_OPTIONS) {
+      const item = document.createElement("option");
+      item.value = option.name;
+      if (option.aliases.length > 0) item.label = option.aliases.join(", ");
+      list.appendChild(item);
+    }
+    chrome.appendChild(list);
     pre.appendChild(chrome);
 
     this.dom = pre;
     this.contentDOM = code;
+    this.codeMountEl = codeMount;
     this.chromeEl = chrome;
     this.inputEl = input;
     this.diagramEl = diagram;
+    this.cm = createEmbeddedCodeMirrorEditor({
+      parent: codeMount,
+      doc: node.textContent,
+      language: lang,
+      className: "typora-web-cm-code",
+      onChange: this.onCodeChange,
+    });
 
+    codeMount.addEventListener("focusin", this.onFocusIn);
+    codeMount.addEventListener("focusout", this.onFocusOut);
+    diagram.addEventListener("click", this.onDiagramClick);
     input.addEventListener("input", this.onInput);
     input.addEventListener("keydown", this.onInputKeyDown);
     input.addEventListener("mousedown", (e) => e.stopPropagation());
@@ -160,15 +198,47 @@ class CodeBlockView implements NodeView {
     this.dom.classList.toggle("cb-lang-focus", langFocus);
     if (langFocus) this.dom.setAttribute("data-lang-focus", "1");
     else this.dom.removeAttribute("data-lang-focus");
-    if (langFocus && typeof this.inputEl.focus === "function") {
+    if (langFocus) {
       try { this.inputEl.focus(); } catch { /* ignore */ }
+    } else if (active && !this.dom.contains(document.activeElement)) {
+      try { this.cm.view.focus(); } catch { /* ignore */ }
     }
   }
+
+  private onFocusIn = (): void => {
+    this.dom.classList.add("cb-active");
+  };
+
+  private onFocusOut = (event: FocusEvent): void => {
+    const next = event.relatedTarget as Node | null;
+    if (!next || !this.dom.contains(next)) this.dom.classList.remove("cb-active");
+  };
+
+  private onDiagramClick = (): void => {
+    if (!this.dom.classList.contains("has-diagram")) return;
+    this.dom.classList.add("diagram-source-open");
+    this.dom.classList.add("cb-active");
+    try { this.cm.view.focus(); } catch { /* ignore */ }
+  };
+
+  private onCodeChange = (code: string): void => {
+    if (this.syncingFromProseMirror) return;
+    const pos = this.getPos();
+    if (pos == null) return;
+    const node = this.view.state.doc.nodeAt(pos);
+    if (!node || node.type.name !== "code_block") return;
+    if (node.textContent === code) return;
+    const content = code ? this.view.state.schema.text(code) : null;
+    const next = node.type.create(node.attrs, content ? [content] : null);
+    const tr = this.view.state.tr.replaceWith(pos, pos + node.nodeSize, next);
+    this.view.dispatch(tr);
+  };
 
   private onInput = (): void => {
     const pos = this.getPos();
     if (pos == null) return;
     const newLang = this.inputEl.value;
+    this.cm.setLanguage(newLang);
     const tr = this.view.state.tr.setNodeAttribute(pos, "lang", newLang);
     // Preserve virtual lang-focus across the tr (setMeta to same pos).
     tr.setMeta(langFocusKey, { pos });
@@ -220,7 +290,14 @@ class CodeBlockView implements NodeView {
     const lang = (node.attrs.lang as string) ?? "";
     if (lang) this.dom.setAttribute("data-lang", lang);
     else this.dom.removeAttribute("data-lang");
+    this.dom.dataset.code = node.textContent;
     if (this.inputEl.value !== lang) this.inputEl.value = lang;
+    this.cm.setLanguage(lang);
+    if (this.cm.view.state.doc.toString() !== node.textContent) {
+      this.syncingFromProseMirror = true;
+      this.cm.setDoc(node.textContent);
+      this.syncingFromProseMirror = false;
+    }
     this.applyDecorations(decorations);
     this.renderDiagram(node);
     return true;
@@ -230,7 +307,12 @@ class CodeBlockView implements NodeView {
     const lang = String(node.attrs.lang ?? "").trim().toLowerCase();
     if (lang !== "mermaid") {
       this.diagramScheduler.cancel();
-      this.dom.classList.remove("has-diagram", "diagram-success", "diagram-error");
+      this.dom.classList.remove(
+        "has-diagram",
+        "diagram-success",
+        "diagram-error",
+        "diagram-source-open",
+      );
       this.diagramEl.replaceChildren();
       this.diagramEl.removeAttribute("data-diagram-state");
       this.renderedDiagramKey = "";
@@ -264,15 +346,28 @@ class CodeBlockView implements NodeView {
 
   // The input is non-PM DOM; PM should not process clicks/keys inside it.
   stopEvent(e: Event): boolean {
-    return this.chromeEl.contains(e.target as Node);
+    const target = e.target as Node;
+    return (
+      this.chromeEl.contains(target) ||
+      this.codeMountEl.contains(target) ||
+      this.diagramEl.contains(target)
+    );
   }
 
   ignoreMutation(m: { target: Node; type?: string; attributeName?: string | null }): boolean {
-    if (this.chromeEl.contains(m.target) || this.diagramEl.contains(m.target)) return true;
+    if (
+      this.chromeEl.contains(m.target) ||
+      this.codeMountEl.contains(m.target) ||
+      this.diagramEl.contains(m.target)
+    ) {
+      return true;
+    }
     if (
       m.target === this.dom &&
       m.type === "attributes" &&
-      (m.attributeName === "class" || m.attributeName === "data-lang-focus")
+      (m.attributeName === "class" ||
+        m.attributeName === "data-lang-focus" ||
+        m.attributeName === "data-code")
     ) {
       return true;
     }
@@ -281,6 +376,10 @@ class CodeBlockView implements NodeView {
 
   destroy(): void {
     this.diagramScheduler.cancel();
+    this.cm.destroy();
+    this.codeMountEl.removeEventListener("focusin", this.onFocusIn);
+    this.codeMountEl.removeEventListener("focusout", this.onFocusOut);
+    this.diagramEl.removeEventListener("click", this.onDiagramClick);
     this.inputEl.removeEventListener("input", this.onInput);
     this.inputEl.removeEventListener("keydown", this.onInputKeyDown);
   }
@@ -290,47 +389,6 @@ class CodeBlockView implements NodeView {
 // Plugin: nodeView registration, chrome-visibility decorations, lang-focus
 // state, and ArrowUp/Down handlers for crossing main ↔ lang-input.
 // ─────────────────────────────────────────────────────────────────────────────
-
-const codeHighlightKey = new PluginKey<DecorationSet>("codeMirrorCodeHighlight");
-
-function buildCodeHighlightDecorations(doc: PMNode): DecorationSet {
-  const decos: Decoration[] = [];
-  doc.descendants((node, pos) => {
-    if (node.type.name !== "code_block") return true;
-    const lang = String(node.attrs.lang ?? "");
-    const tokens = highlightCode(node.textContent, lang);
-    const start = pos + 1;
-    for (const token of tokens) {
-      if (token.from < token.to) {
-        decos.push(
-          Decoration.inline(start + token.from, start + token.to, {
-            class: token.className,
-          }),
-        );
-      }
-    }
-    return false;
-  });
-  return decos.length > 0 ? DecorationSet.create(doc, decos) : DecorationSet.empty;
-}
-
-function codeHighlightPlugin(): Plugin<DecorationSet> {
-  return new Plugin<DecorationSet>({
-    key: codeHighlightKey,
-    state: {
-      init: (_, state) => buildCodeHighlightDecorations(state.doc),
-      apply: (tr, old) => {
-        if (!tr.docChanged) return old.map(tr.mapping, tr.doc);
-        return buildCodeHighlightDecorations(tr.doc);
-      },
-    },
-    props: {
-      decorations(state) {
-        return codeHighlightKey.getState(state) ?? DecorationSet.empty;
-      },
-    },
-  });
-}
 
 function fencedCodeChromePlugin(): Plugin<LangFocus> {
   return new Plugin<LangFocus>({
@@ -510,7 +568,6 @@ export const fencedCode: FeatureSpec = {
 
   plugins: (schema) => [
     makeFencedPlugin(schema).plugin,
-    codeHighlightPlugin(),
     fencedCodeChromePlugin(),
   ],
 

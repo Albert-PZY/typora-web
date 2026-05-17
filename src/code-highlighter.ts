@@ -1,134 +1,218 @@
-import CodeMirror from "codemirror";
-import "codemirror/addon/runmode/runmode.js";
-import "codemirror/mode/clike/clike.js";
-import "codemirror/mode/css/css.js";
-import "codemirror/mode/dockerfile/dockerfile.js";
-import "codemirror/mode/go/go.js";
-import "codemirror/mode/gfm/gfm.js";
-import "codemirror/mode/htmlmixed/htmlmixed.js";
-import "codemirror/mode/javascript/javascript.js";
-import "codemirror/mode/jsx/jsx.js";
-import "codemirror/mode/markdown/markdown.js";
-import "codemirror/mode/php/php.js";
-import "codemirror/mode/powershell/powershell.js";
-import "codemirror/mode/python/python.js";
-import "codemirror/mode/ruby/ruby.js";
-import "codemirror/mode/rust/rust.js";
-import "codemirror/mode/shell/shell.js";
-import "codemirror/mode/sql/sql.js";
-import "codemirror/mode/swift/swift.js";
-import "codemirror/mode/xml/xml.js";
-import "codemirror/mode/yaml/yaml.js";
+import {
+  Compartment,
+  EditorState as CodeMirrorState,
+  type Extension,
+} from "@codemirror/state";
+import {
+  defaultKeymap,
+  history,
+  historyKeymap,
+  indentWithTab,
+} from "@codemirror/commands";
+import {
+  bracketMatching,
+  defaultHighlightStyle,
+  indentOnInput,
+  LanguageDescription,
+  type LanguageSupport,
+  syntaxHighlighting,
+} from "@codemirror/language";
+import { languages } from "@codemirror/language-data";
+import { markdown } from "@codemirror/lang-markdown";
+import {
+  EditorView as CodeMirrorView,
+  keymap,
+  type ViewUpdate,
+} from "@codemirror/view";
 
-export type HighlightToken = {
-  from: number;
-  to: number;
-  className: string;
+export type CodeLanguageOption = {
+  name: string;
+  aliases: readonly string[];
+  extensions: readonly string[];
 };
 
-type ModeSpec = string | { name: string; [key: string]: unknown };
-type RunModeCallback = (text: string, style: string | null) => void;
-type CodeMirrorRunMode = typeof CodeMirror & {
-  runMode: (
-    code: string,
-    mode: ModeSpec,
-    callback: RunModeCallback,
-    options?: { tabSize?: number },
-  ) => void;
-};
+export const OFFICIAL_CODEMIRROR_LANGUAGE_PACKAGES = [
+  "@codemirror/lang-angular",
+  "@codemirror/lang-cpp",
+  "@codemirror/lang-css",
+  "@codemirror/lang-go",
+  "@codemirror/lang-html",
+  "@codemirror/lang-java",
+  "@codemirror/lang-javascript",
+  "@codemirror/lang-jinja",
+  "@codemirror/lang-json",
+  "@codemirror/lang-less",
+  "@codemirror/lang-lezer",
+  "@codemirror/lang-liquid",
+  "@codemirror/lang-markdown",
+  "@codemirror/lang-php",
+  "@codemirror/lang-python",
+  "@codemirror/lang-rust",
+  "@codemirror/lang-sass",
+  "@codemirror/lang-sql",
+  "@codemirror/lang-vue",
+  "@codemirror/lang-wast",
+  "@codemirror/lang-xml",
+  "@codemirror/lang-yaml",
+] as const;
 
-const codeMirror = CodeMirror as CodeMirrorRunMode;
+const lezerDescription = LanguageDescription.of({
+  name: "Lezer",
+  alias: ["lezer"],
+  extensions: ["grammar"],
+  load: async () => (await import("@codemirror/lang-lezer")).lezer(),
+});
 
-const MODE_BY_LANGUAGE = new Map<string, ModeSpec>([
-  ["bash", "shell"],
-  ["c", "text/x-csrc"],
-  ["cpp", "text/x-c++src"],
-  ["c++", "text/x-c++src"],
-  ["cs", "text/x-csharp"],
-  ["csharp", "text/x-csharp"],
-  ["css", "css"],
-  ["dockerfile", "dockerfile"],
-  ["go", "go"],
-  ["gfm", "gfm"],
-  ["h", "text/x-csrc"],
-  ["hpp", "text/x-c++src"],
-  ["htm", "htmlmixed"],
-  ["html", "htmlmixed"],
-  ["java", "text/x-java"],
-  ["javascript", "javascript"],
-  ["js", "javascript"],
-  ["json", { name: "javascript", json: true }],
-  ["jsx", "jsx"],
-  ["kotlin", "text/x-kotlin"],
-  ["kt", "text/x-kotlin"],
-  ["md", "gfm"],
-  ["markdown", "gfm"],
-  ["php", "php"],
-  ["powershell", "powershell"],
-  ["ps1", "powershell"],
-  ["py", "python"],
-  ["python", "python"],
-  ["rb", "ruby"],
-  ["ruby", "ruby"],
-  ["rs", "rust"],
-  ["rust", "rust"],
-  ["sh", "shell"],
-  ["shell", "shell"],
-  ["sql", "sql"],
-  ["swift", "swift"],
-  ["ts", { name: "javascript", typescript: true }],
-  ["tsx", { name: "jsx", typescript: true }],
-  ["typescript", { name: "javascript", typescript: true }],
-  ["xml", "xml"],
-  ["yaml", "yaml"],
-  ["yml", "yaml"],
-]);
+const codeMirrorLanguages = languages.some((language) => language.name === "Lezer")
+  ? languages
+  : [...languages, lezerDescription];
 
-function normalizeLanguage(lang: string): string {
-  return lang.trim().toLowerCase().replace(/^\./, "").split(/\s+/, 1)[0] ?? "";
+export const CODE_LANGUAGE_OPTIONS: readonly CodeLanguageOption[] = codeMirrorLanguages
+  .map((language) => ({
+    name: language.name,
+    aliases: language.alias,
+    extensions: language.extensions,
+  }))
+  .sort((a, b) => a.name.localeCompare(b.name, "en"));
+
+function normalizeLanguageInfo(info: string): string {
+  const first = info.trim().split(/\s+/, 1)[0] ?? "";
+  return first
+    .replace(/^\{?\.?/, "")
+    .replace(/\}?$/, "")
+    .trim()
+    .toLowerCase();
 }
 
-function classNameForStyle(style: string): string {
-  return Array.from(
-    new Set(
-      style
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean)
-        .map((name) => `cm-${name}`),
-    ),
-  ).join(" ");
-}
-
-export function resolveCodeMirrorMode(lang: string): ModeSpec | null {
-  const normalized = normalizeLanguage(lang);
+export function resolveCodeLanguage(info: string): LanguageDescription | null {
+  const normalized = normalizeLanguageInfo(info);
   if (!normalized) return null;
-  return MODE_BY_LANGUAGE.get(normalized) ?? null;
+  return (
+    LanguageDescription.matchLanguageName(codeMirrorLanguages, normalized, true) ??
+    LanguageDescription.matchFilename(codeMirrorLanguages, `index.${normalized}`)
+  );
 }
 
-export function highlightCode(code: string, lang: string): HighlightToken[] {
-  const mode = resolveCodeMirrorMode(lang);
-  if (!mode || !code) return [];
-
-  const tokens: HighlightToken[] = [];
-  let offset = 0;
-
+export async function loadCodeLanguage(info: string): Promise<LanguageSupport | null> {
+  const description = resolveCodeLanguage(info);
+  if (!description) return null;
   try {
-    codeMirror.runMode(
-      code,
-      mode,
-      (text, style) => {
-        const from = offset;
-        offset += text.length;
-        if (!style || text.length === 0) return;
-        const className = classNameForStyle(style);
-        if (className) tokens.push({ from, to: offset, className });
-      },
-      { tabSize: 2 },
-    );
+    return await description.load();
   } catch {
-    return [];
+    return null;
+  }
+}
+
+type CodeMirrorEditorOptions = {
+  parent: HTMLElement;
+  doc: string;
+  className: string;
+  language?: string;
+  markdownSource?: boolean;
+  onChange?: (doc: string, update: ViewUpdate) => void;
+};
+
+export type EmbeddedCodeMirrorEditor = {
+  view: CodeMirrorView;
+  setDoc(doc: string): void;
+  setLanguage(language: string): void;
+  destroy(): void;
+};
+
+function commonExtensions(
+  languageCompartment: Compartment,
+  onChange?: (doc: string, update: ViewUpdate) => void,
+): Extension[] {
+  return [
+    history(),
+    keymap.of([indentWithTab, ...historyKeymap, ...defaultKeymap]),
+    CodeMirrorState.tabSize.of(2),
+    indentOnInput(),
+    bracketMatching(),
+    syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+    CodeMirrorView.lineWrapping,
+    languageCompartment.of([]),
+    CodeMirrorView.updateListener.of((update) => {
+      if (update.docChanged) onChange?.(update.state.doc.toString(), update);
+    }),
+    CodeMirrorView.theme({
+      "&": {
+        backgroundColor: "transparent",
+        color: "inherit",
+        font: "inherit",
+      },
+      ".cm-scroller": {
+        fontFamily: "inherit",
+        lineHeight: "inherit",
+        overflow: "visible",
+      },
+      ".cm-content": {
+        padding: "0",
+        caretColor: "currentColor",
+      },
+      ".cm-line": {
+        padding: "0",
+      },
+      ".cm-gutters": {
+        display: "none",
+      },
+      ".cm-activeLine": {
+        backgroundColor: "transparent",
+      },
+      ".cm-focused": {
+        outline: "none",
+      },
+      "&.cm-focused": {
+        outline: "none",
+      },
+    }),
+  ];
+}
+
+export function createEmbeddedCodeMirrorEditor(
+  options: CodeMirrorEditorOptions,
+): EmbeddedCodeMirrorEditor {
+  const languageCompartment = new Compartment();
+  const extensions = commonExtensions(languageCompartment, options.onChange);
+  if (options.markdownSource) {
+    extensions.push(markdown({ codeLanguages: codeMirrorLanguages }));
   }
 
-  return tokens;
+  const view = new CodeMirrorView({
+    parent: options.parent,
+    state: CodeMirrorState.create({
+      doc: options.doc,
+      extensions,
+    }),
+  });
+  view.dom.classList.add(options.className);
+
+  let languageRequest = 0;
+  const setLanguage = (language: string): void => {
+    if (options.markdownSource) return;
+    const request = ++languageRequest;
+    loadCodeLanguage(language).then((support) => {
+      if (request !== languageRequest) return;
+      view.dispatch({
+        effects: languageCompartment.reconfigure(support ? support.extension : []),
+      });
+    });
+  };
+
+  if (options.language) setLanguage(options.language);
+
+  return {
+    view,
+    setDoc(doc: string): void {
+      const current = view.state.doc.toString();
+      if (current === doc) return;
+      view.dispatch({
+        changes: { from: 0, to: current.length, insert: doc },
+      });
+    },
+    setLanguage,
+    destroy(): void {
+      view.destroy();
+    },
+  };
 }

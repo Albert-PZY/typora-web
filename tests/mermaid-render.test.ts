@@ -1,5 +1,6 @@
 import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
 
+import { createEditor } from "../src/lib.ts";
 import { createMermaidRenderer } from "../src/renderers/mermaid.ts";
 
 describe("mermaid renderer", () => {
@@ -76,6 +77,30 @@ describe("mermaid source visibility policy", () => {
       expect(code.isConnected).toBe(true);
     } finally {
       editor.remove();
+    }
+  });
+
+  test("clicking a Mermaid preview opens the editable source above the diagram", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const editor = createEditor(host, {
+      initialContent: "```mermaid\nflowchart LR\n  A --> B\n```",
+    });
+
+    try {
+      const pre = host.querySelector("pre.has-diagram");
+      const panel = host.querySelector<HTMLElement>(".diagram-panel");
+
+      expect(pre).not.toBeNull();
+      expect(panel).not.toBeNull();
+
+      panel?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(pre?.classList.contains("diagram-source-open")).toBe(true);
+      expect(host.querySelector(".typora-web-code-editor")).not.toBeNull();
+    } finally {
+      editor.destroy();
+      host.remove();
     }
   });
 });

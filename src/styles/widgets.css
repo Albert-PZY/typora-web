@@ -17,20 +17,15 @@
  */
 
 /* ─── createEditor() façade scaffolding ──────────────────────────── */
-/* Rendered editor and source textarea share a wrapper so toggling
- * `editor.toggleSource()` keeps layout stable. The textarea baseline
+/* Rendered editor and source CodeMirror share a wrapper so toggling
+ * `editor.toggleSource()` keeps layout stable. The source editor baseline
  * here is just enough to make source mode usable out of the box;
  * consumers can override with their own font / colors. */
 .typora-web-wrap { display: block; }
 .typora-web-editor-host { display: block; }
-.typora-web-source {
+.typora-web-source-editor {
   display: block;
   width: 100%;
-  /* Height is set by the JS `autoSizeSource` on each input — the
-   * textarea grows to match its content so the page never shows a
-   * nested scrollbar inside the source view. */
-  resize: none;
-  overflow: hidden;
   border: none;
   outline: none;
   font: 14px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -42,7 +37,20 @@
   box-sizing: border-box;
   padding: 0;
 }
-.typora-web-source[hidden] { display: none; }
+.typora-web-source-editor[hidden] { display: none; }
+.typora-web-source-editor .cm-editor,
+.typora-web-code-editor .cm-editor {
+  background: transparent;
+  color: inherit;
+}
+.typora-web-source-editor .cm-scroller,
+.typora-web-code-editor .cm-scroller {
+  overflow: visible;
+}
+.typora-web-source-editor .cm-content,
+.typora-web-code-editor .cm-content {
+  min-height: 1.5em;
+}
 
 /* ─── PM root reset ──────────────────────────────────────────────── */
 .ProseMirror {
@@ -224,16 +232,26 @@
 .ProseMirror .toc-h5 { padding-left: 4.8em; }
 .ProseMirror .toc-h6 { padding-left: 6em; }
 
-/* ─── Sanitized CommonMark HTML blocks ───────────────────────────── */
+/* ─── CommonMark HTML blocks as source text ─────────────────────── */
 .ProseMirror html-block {
   display: block;
   margin: 0 0 1em;
 }
 .ProseMirror html-block .html-block-render {
-  display: flow-root;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
-.ProseMirror html-block .html-block-render > :first-child { margin-top: 0; }
-.ProseMirror html-block .html-block-render > :last-child { margin-bottom: 0; }
+.ProseMirror html-block .html-block-source {
+  display: block;
+  padding: 0;
+  background: transparent;
+  white-space: pre-wrap;
+}
+.ProseMirror html-block .html-comment-source {
+  color: #999;
+  font-style: italic;
+}
 
 /* ─── Emoji autocomplete (fixed-position popup) ──────────────────── */
 .ProseMirror .emoji-completion {
@@ -336,6 +354,13 @@
 
 /* ─── Fenced code NodeView chrome ────────────────────────────────── */
 .ProseMirror pre { position: relative; }
+.ProseMirror pre .pm-code-content {
+  display: none;
+}
+.ProseMirror pre .typora-web-code-editor {
+  display: block;
+  min-height: 1.5em;
+}
 .ProseMirror pre .cb-chrome {
   display: none;
   position: absolute;
@@ -366,8 +391,12 @@
   white-space: normal;
 }
 .ProseMirror pre.has-diagram .diagram-panel { display: block; }
-.ProseMirror pre.has-diagram.diagram-success > code {
+.ProseMirror pre.has-diagram.diagram-success:not(.diagram-source-open) .typora-web-code-editor {
   display: none;
+}
+.ProseMirror pre.has-diagram.diagram-source-open .typora-web-code-editor {
+  display: block;
+  margin-bottom: 10px;
 }
 .ProseMirror pre .diagram-panel[data-diagram-state="loading"]::before {
   content: "Rendering diagram";
@@ -491,6 +520,9 @@
   color: #ece7dd;
 }
 :root[data-appearance="dark"] .ProseMirror mark-comment {
+  color: #858a91;
+}
+:root[data-appearance="dark"] .ProseMirror html-block .html-comment-source {
   color: #858a91;
 }
 :root[data-appearance="dark"] .ProseMirror math-inline[data-math-state="error"],
