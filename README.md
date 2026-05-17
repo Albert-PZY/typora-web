@@ -1,42 +1,70 @@
 # typora-web
 
-> A Typora-style Markdown editor for the web.
+> A native, lightweight, Typora-style Markdown editor for the web.
 
-Markdown looks like a finished document while you write it. Italic renders as *italic* the moment you close the asterisks. Headings appear at their final size as soon as you start typing. Source markers like `*` and `#` fade out when the cursor moves away and come back when you click in.
+typora-web makes Markdown feel like a finished document while it is still being
+edited. Source markers fade when they are not needed, rich blocks render in
+place, and the underlying Markdown remains round-trippable.
 
-Markdown syntax is constrained by [CommonMark 0.31.2][cm]. Typora extensions, GitHub-flavored tables/task items, math, Mermaid, CodeMirror-based code highlighting, and built-in light/dark appearances are layered on top as explicit, tested compatibility features.
+The project is built with TypeScript, ProseMirror, markdown-it, CodeMirror 5,
+KaTeX, Mermaid, and native DOM APIs. It intentionally does not use Vue, React,
+Svelte, or any other frontend framework.
 
-It's also an experiment. Every line of source was written by an AI agent through chat. The human only chats; nothing gets typed directly into source files. To keep the agent productive at this scale, each supported syntax is described as a **spec**: a seed text, an event sequence, and the expected rendered output. Each spec compiles to a test the agent has to make pass. The result is a usable editor and a record of how far agent coding holds up on a serious project.
+## Links
 
-## Try it
+- [Live demo][demo]
+- [Spec catalog][demo-specs]
+- [Contribution guide](CONTRIBUTING.md)
+- [Commit convention](docs/git-commit-convention.md)
+- [Release process](docs/release-process.md)
+- [Syntax survey](docs/typora-syntax-survey.md)
 
-> If you're reading this on GitHub, the live editing effect won't show. Visit the [live demo][demo] for the actual editor.
+## Status
 
-Inline marks: **bold**, *italic*, `inline code`, ~~strike~~, ==highlight==, sub like H~2~O, sup like E = mc^2^. Bare URLs in angle brackets become autolinks: <https://prosemirror.net>. Regular links work the usual way: [ProseMirror guide][pmguide], [CommonMark spec][cm]. Emoji shortcodes resolve as you type: :books: :tada: :hourglass: :warning:.
+typora-web is currently a beta project. It is useful for testing and iteration,
+but it is not production-ready yet.
 
-Task lists hold their state visually, and heavier Typora extensions render in place:
+Version tags use the project beta format `vx.x-beta.x`. Package metadata uses
+npm-compatible SemVer, for example `0.6.0-beta.1`.
 
-- [x] inline marks (em, strong, code, strike, highlight, sub/sup)
-- [x] autolinks and reference-style links
-- [x] tables with per-column alignment
-- [x] sanitized CommonMark HTML blocks
-- [x] inline and block math (KaTeX-based)
-- [x] diagram fences like Mermaid (lazy-rendered)
-- [x] CodeMirror 5 code-block highlighting, focus mode, typewriter mode, common editing shortcuts, bilingual website chrome, built-in light/dark themes, and local `.md` open/save
+## Highlights
 
-Lists nest, and exit on a triple-Enter staircase the way Typora does:
+| Area | Support |
+|---|---|
+| Editing model | WYSIWYG-style Markdown editing with source-preserving ProseMirror documents |
+| Markdown baseline | CommonMark 0.31.2 through markdown-it CommonMark mode |
+| Typora extensions | Highlight, subscript, superscript, `[toc]`, emoji shortcodes, math, and Mermaid |
+| Code blocks | Editable fenced code blocks with [CodeMirror 5 runmode][cm5-runmode] token classes |
+| Math | Inline and block math rendered with KaTeX |
+| Diagrams | Mermaid fences render lazy SVG previews and keep errors contained |
+| Local files | Open, edit, save, and Save As for local `.md` files where browser APIs allow it |
+| Focus tools | Focus mode, typewriter mode, source mode, and common editing shortcuts |
+| Appearance | Built-in light and dark appearances, no runtime external CSS theme import |
+| Website chrome | English and Chinese UI switching; document content is never translated |
 
-1. outer ordered item
-   - nested bullet with a `code span`
-   - another, with **bold** in it
-     1. third level
-2. back to the outer list
+## Try It
 
-> Blockquotes render inline marks just like paragraphs do. You can drop ==highlights==, [links](https://typora.io), or `code` into a quote and the source still round-trips byte for byte.
->
-> Press Enter on an empty quote line to exit.
+Open the [live demo][demo] and edit the document directly. If you are reading
+this file on GitHub, the rich editing behavior is not visible because GitHub
+renders Markdown statically.
 
-Press `⌘/` (or `Ctrl+/`) at any time to toggle between rendered and raw source view.
+Useful shortcuts:
+
+| Shortcut | Behavior |
+|---|---|
+| `Mod-/` | Toggle rendered/source mode |
+| `F8` | Toggle focus mode |
+| `F9` | Toggle typewriter mode |
+| `Mod-b` / `Mod-i` | Toggle bold or italic |
+| `Mod-k` | Create or edit a link |
+| `Shift-Enter` | Insert a hard break |
+| `Mod-0`..`Mod-6` | Paragraph or heading levels |
+| `Mod-Shift-7` / `Mod-Shift-8` | Ordered or bullet list |
+| `Mod-Shift-q` | Blockquote |
+| `Mod-Shift-k` | Fenced code block |
+| `Mod-Shift-m` | Math block |
+
+`Mod` means `Cmd` on macOS and `Ctrl` elsewhere.
 
 ## Install
 
@@ -53,132 +81,150 @@ import "typora-web/theme-typora.css";
 import "katex/dist/katex.min.css";
 
 const editor = createEditor(document.querySelector("#app")!, {
-  initialContent: "# hello",
-  onChange: (md) => {
-    document.title = md.split("\n", 1)[0] || "typora-web";
+  initialContent: "# Hello typora-web",
+  onChange: (markdown) => {
+    console.log(markdown);
   },
 });
 ```
 
-Controller methods:
+The required editor chrome lives in `typora-web/widgets.css`. Import one content
+theme after it. The default demo imports `typora-web/theme-typora.css`.
+
+Built-in light and dark appearances are controlled with `data-appearance` on the
+document root:
+
+```ts
+document.documentElement.dataset.appearance = "dark";
+document.documentElement.style.colorScheme = "dark";
+```
+
+The demo website provides this as a top-right toggle. External Typora `.css`
+theme import was removed to keep the editor style surface predictable.
+
+## Controller API
+
+`createEditor(host, options)` returns a small controller:
 
 | Method / field | Description |
 |---|---|
-| `editor.getMarkdown()` | current markdown |
-| `editor.setMarkdown(md)` | replace contents |
-| `editor.toggleSource()` | flip rendered ↔ raw view (also bound to `⌘/` / `Ctrl+/`) |
-| `editor.isSourceMode()` | boolean |
-| `editor.toggleFocusMode()` / `editor.setFocusMode(enabled)` / `editor.isFocusMode()` | focus-mode controls (also bound to `F8`) |
-| `editor.toggleTypewriterMode()` / `editor.setTypewriterMode(enabled)` / `editor.isTypewriterMode()` | typewriter-mode controls (also bound to `F9`) |
-| `editor.openMarkdownFile()` | open a local `.md` file through the File System Access API when available |
-| `editor.saveMarkdownFile()` | save to the current local file handle, or fall back to Save As |
-| `editor.saveMarkdownFileAs()` | save through the File System Access API, or download `untitled.md` when unavailable |
-| `editor.getCurrentFileName()` | current local file name, if one has been opened or saved |
-| `editor.focus()` | focus the active surface |
-| `editor.destroy()` | tear down |
-| `editor.view` | underlying ProseMirror EditorView. No stability guarantee on this access. |
+| `editor.getMarkdown()` | Return the current Markdown |
+| `editor.setMarkdown(markdown)` | Replace the current document |
+| `editor.toggleSource()` | Toggle rendered/source mode |
+| `editor.isSourceMode()` | Return whether source mode is active |
+| `editor.toggleFocusMode()` | Toggle focus mode |
+| `editor.setFocusMode(enabled)` | Set focus mode explicitly |
+| `editor.isFocusMode()` | Return whether focus mode is active |
+| `editor.toggleTypewriterMode()` | Toggle typewriter mode |
+| `editor.setTypewriterMode(enabled)` | Set typewriter mode explicitly |
+| `editor.isTypewriterMode()` | Return whether typewriter mode is active |
+| `editor.openMarkdownFile()` | Open a local `.md` file when available |
+| `editor.saveMarkdownFile()` | Save to the current file handle or fall back to Save As |
+| `editor.saveMarkdownFileAs()` | Save through File System Access API or download fallback |
+| `editor.getCurrentFileName()` | Return the current local file name, when known |
+| `editor.focus()` | Focus the active editing surface |
+| `editor.destroy()` | Destroy the editor and remove its DOM |
+| `editor.view` | Advanced escape hatch to the ProseMirror `EditorView` |
 
-Options: `initialContent`, `onChange(md)`, `onFocus()`, `onBlur()`.
+Options:
 
-Two CSS themes ship: `typora-web/theme-typora.css` (default look on the live demo) and `typora-web/theme-github.css`. Import one. The Typora-flavored theme includes built-in light and dark appearances keyed by `data-appearance="light"` or `data-appearance="dark"` on the document root; the demo website exposes this as the top-right appearance toggle. Runtime import of external Typora `.css` theme files has been removed so the editor keeps a small, predictable style surface.
+| Option | Description |
+|---|---|
+| `initialContent` | Initial Markdown content |
+| `onChange(markdown)` | Called after document transactions |
+| `onFocus()` | Called when the active editing surface receives focus |
+| `onBlur()` | Called when the active editing surface loses focus |
 
-Fenced code blocks use [CodeMirror 5 runmode][cm5-runmode] and render official CodeMirror token classes such as `cm-keyword`, `cm-string`, and `cm-comment` inside the editable code block. Unknown languages stay plain instead of being guessed.
+## Markdown Support
 
-Common editing shortcuts include `Mod-b`, `Mod-i`, `Mod-k`, `Shift-Enter`, `Mod-0`..`Mod-6`, `Mod-Shift-q`, `Mod-Shift-7`, `Mod-Shift-8`, `Mod-Shift-k`, `Mod-Shift-m`, undo, and redo. `Mod` means `Cmd` on macOS and `Ctrl` elsewhere.
+The parser is constrained by [CommonMark 0.31.2][cm]. Typora-specific behavior is
+implemented as explicit, tested extensions.
 
-## Coverage
+Stable areas:
 
-Legend: :white_check_mark: stable · :yellow_circle: partial (note explains what's missing) · :pause_button: todo.
+- Paragraphs, hard breaks, soft breaks, ATX headings, setext headings,
+  blockquotes, thematic breaks, lists, task lists, tables, fenced code blocks,
+  HTML blocks, math blocks, Mermaid fences, YAML front matter, and `[toc]`.
+- Emphasis, strong, inline code, strikethrough, highlight, subscript,
+  superscript, links, images, autolinks, emoji shortcodes, and inline math.
+- Focus mode, typewriter mode, source mode, common editing shortcuts, local
+  Markdown file workflows, bilingual website chrome, and built-in light/dark
+  appearance.
 
-### Block syntax
+Partial or intentionally pending areas:
 
-| Syntax | Status | Notes |
-|---|:---:|---|
-| paragraph | :white_check_mark: | |
-| ATX heading `#`..`######` | :white_check_mark: | |
-| setext heading (`===` / `---` underline) | :white_check_mark: | |
-| blockquote `>` | :white_check_mark: | |
-| bullet list `-` `*` `+` | :white_check_mark: | |
-| ordered list `1.` | :white_check_mark: | |
-| nested list | :white_check_mark: | |
-| task list `- [ ]` / `- [x]` | :white_check_mark: | |
-| fenced code ```` ``` ```` | :white_check_mark: | editable language chrome plus CodeMirror 5 token highlighting for common languages |
-| indented code (4-space) | :yellow_circle: | parses fine; saves as fenced (shape attr not yet preserved) |
-| thematic break `---` | :white_check_mark: | |
-| table `\| a \| b \|` | :white_check_mark: | |
-| YAML front matter | :white_check_mark: | |
-| reference link def `[id]: url` | :yellow_circle: | live entry committed as block; reload drops the def node (markdown-it consumes it on parse) |
-| HTML block | :white_check_mark: | CommonMark HTML block tokens render through DOMPurify and serialize from the original source |
-| math block `$$…$$` | :white_check_mark: | rendered with KaTeX; source remains editable |
-| Mermaid fenced code | :white_check_mark: | ` ```mermaid ` fences render a diagram panel lazily and preserve source |
+- Indented code blocks parse, but serialize as fenced code.
+- Reference definitions can be entered live, but markdown-it consumes
+  definitions during parse.
+- Some complex emphasis rule-of-three and escaped-link edge cases remain.
+- Inline HTML is preserved as literal source text; sanitized inline rendering is
+  still pending.
+- Mermaid is the only diagram engine currently implemented.
+- Runtime import of external Typora CSS themes is intentionally not supported.
 
-### Inline syntax
+For the full compatibility matrix, see [docs/typora-syntax-survey.md](docs/typora-syntax-survey.md).
 
-| Syntax | Status | Notes |
-|---|:---:|---|
-| em `*x*` / `_x_` | :white_check_mark: | |
-| strong `**x**` / `__x__` | :white_check_mark: | |
-| nested `***em+strong***` | :yellow_circle: | works only when both runs ≥ 3 chars; full rule-of-three pending |
-| inline code `` `x` `` | :white_check_mark: | |
-| strike `~~x~~` | :white_check_mark: | |
-| link `[text](url)` | :yellow_circle: | edge cases: nested `]`, `\]` escape, hrefs with spaces |
-| link with title `[t](u "title")` | :white_check_mark: | |
-| empty-text link `[](url)` | :white_check_mark: | |
-| image `![alt](src)` | :white_check_mark: | |
-| autolink `<https://x.com>` | :white_check_mark: | |
-| reference-style link `[t][id]` | :yellow_circle: | resolves to inline link on parse; def block is the :yellow_circle: piece |
-| hard break (2-space + `\n`) | :white_check_mark: | |
-| soft break (`\n` in para) | :white_check_mark: | |
-| backslash escape `\*` | :yellow_circle: | round-trip works; no input-time UX |
-| inline HTML | :yellow_circle: | preserved as literal source text for now; full sanitized inline rendering is still pending |
-| inline math `$x$` | :white_check_mark: | rendered with KaTeX outside code spans; source delimiters reappear near the cursor |
+## Architecture
 
-### Typora extensions
+The codebase is organized around small feature modules:
 
-| Syntax | Status | Notes |
-|---|:---:|---|
-| highlight `==x==` | :white_check_mark: | |
-| subscript `~x~` | :white_check_mark: | |
-| superscript `^x^` | :white_check_mark: | |
-| `[toc]` block | :white_check_mark: | |
-| emoji `:smile:` | :white_check_mark: | |
-| HTML comment `<!-- -->` | :white_check_mark: | |
-| Mermaid diagram fences | :white_check_mark: | strict, lazy Mermaid renderer with contained error panels |
-| other diagram engines (flow, sequence, Vega, …) | :pause_button: | Mermaid only for now |
+| Path | Purpose |
+|---|---|
+| `src/editor-api.ts` | Public `createEditor()` controller and DOM mounting |
+| `src/editor.ts` | ProseMirror plugin stack |
+| `src/schema.ts` | Core schema plus feature-contributed nodes and marks |
+| `src/parser.ts` | Markdown parsing through markdown-it and feature token handlers |
+| `src/serializer.ts` | Markdown serialization |
+| `src/features/` | One module per Markdown or Typora feature |
+| `specs/features/` | Executable behavior specs |
+| `tests/` | Unit tests, parser tests, round-trip tests, and spec replay tests |
+| `website/` | Native demo site and spec catalog |
 
-### Editor behaviors
+Feature work should preserve Markdown source form. If a visual preview is needed
+while text remains editable, prefer ProseMirror decorations or NodeViews that
+keep the source text in the document.
 
-| Behavior | Status | Notes |
-|---|:---:|---|
-| cursor-aware delimiter hinting | :white_check_mark: | |
-| auto-pair brackets | :white_check_mark: | |
-| focus mode | :white_check_mark: | API + `F8`; inactive blocks dim while editing |
-| typewriter mode | :white_check_mark: | API + `F9`; active cursor is scrolled toward the viewport center |
-| common editing shortcuts | :white_check_mark: | source-preserving Markdown commands |
-| built-in light/dark appearance | :white_check_mark: | website toggle plus `data-appearance` styles for page chrome, editor surface, widgets, and CodeMirror tokens |
-| custom Typora CSS theme import | :pause_button: | intentionally removed; use the built-in default styles for now |
-| website i18n | :white_check_mark: | English/Chinese switch for page chrome; editor document content is never translated |
-| local `.md` open/save | :white_check_mark: | File System Access API where available; open falls back to file input and Save As falls back to download |
-| lossless `parse → serialize → parse` | :white_check_mark: | |
+## Development
 
-## Spec
+Use pnpm only:
 
-Specs are the project's core design choice and the harness the agent works in. Each Typora behavior is captured as a **spec**: a seed text, a sequence of input events, and the rendered output expected at each checkpoint. Every spec runs directly as a test case; the agent ships a behavior by making the test pass. Describing behaviors this way is what makes a project this size tractable for an agent to build.
+```sh
+pnpm install
+pnpm dev
+pnpm test
+pnpm build
+pnpm build:lib
+```
 
-The catalog lives at the [`/specs`][demo-specs] page in the live demo, where each card is a spec you can step through.
+The test suite is spec-driven. Each behavior spec describes:
+
+- the seed Markdown,
+- the event stream,
+- and the expected rendered output at each checkpoint.
+
+The live spec catalog at [the demo specs page][demo-specs] exposes the same
+fixtures in a browser.
 
 ## Contributing
 
-Bug reports and feature requests are accepted as specs. If a Typora behavior isn't matched, file an issue with:
+Bug reports and feature requests are accepted as specs whenever possible. A good
+report includes:
 
-- a **seed** (the markdown the editor starts from; can be empty)
-- an **event sequence** (the keys you press; the same DSL existing specs use)
-- the **rendered output** Typora produces
+- the seed Markdown,
+- the exact event sequence,
+- the rendered output Typora produces,
+- and the rendered output typora-web currently produces.
 
-The "report" link on every card in the [live demo's catalog][demo-specs] prefills an issue with seed, events, and observed output ready for you to fill in.
+Before opening a pull request, read [CONTRIBUTING.md](CONTRIBUTING.md). Commits
+must follow [Conventional Commits 1.0.0][conventional-commits] and should be
+split by logical change category.
 
-[demo]: https://albert-pzy.github.io/typora-web/ "live demo"
-[demo-specs]: https://albert-pzy.github.io/typora-web/#/specs "spec catalog"
+## License
+
+[MIT](LICENSE)
+
 [cm]: https://spec.commonmark.org/0.31.2/ "CommonMark 0.31.2"
 [cm5-runmode]: https://codemirror.net/5/doc/manual.html#addon_runmode "CodeMirror 5 runmode"
-[pmguide]: https://prosemirror.net/docs/guide/ "ProseMirror Guide"
+[conventional-commits]: https://www.conventionalcommits.org/en/v1.0.0/ "Conventional Commits 1.0.0"
+[demo]: https://albert-pzy.github.io/typora-web/ "typora-web live demo"
+[demo-specs]: https://albert-pzy.github.io/typora-web/#/specs "typora-web spec catalog"
