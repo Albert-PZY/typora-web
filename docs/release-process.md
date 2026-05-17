@@ -1,0 +1,163 @@
+# Release Process
+
+This project is currently unstable and must use beta releases until the project
+owner manually promotes a version to production.
+
+Reference:
+[GitHub releases documentation](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository).
+
+## Version Format
+
+Use these tag formats:
+
+- Beta milestone releases: `vx.x-beta.x`
+- Production releases: `vx.x.x`
+
+Examples:
+
+```text
+v0.4-beta.1
+v0.4-beta.2
+v1.0.0
+```
+
+Production tags must only be used after the project owner explicitly decides a
+release is production-ready. Until then, all milestone releases are prereleases.
+
+## Package Version Metadata
+
+`package.json` must use valid SemVer. When the Git tag is `v0.4-beta.1`, the
+package version should be represented as `0.4.0-beta.1`.
+
+The Git tag keeps the owner-requested format. The package metadata keeps npm and
+tooling compatibility.
+
+## When To Release
+
+Create a beta release after each large milestone, including:
+
+- A completed Typora-parity feature set.
+- A major editor behavior fix.
+- A major architecture, parser, renderer, theme, or local-file milestone.
+- A repository history rewrite or release-process change that materially affects
+  consumers or contributors.
+
+Do not create a release for tiny documentation-only edits unless they are part
+of a milestone.
+
+## Required Release Steps
+
+1. Confirm the working tree has no unintended changes:
+
+   ```sh
+   git status --short
+   ```
+
+2. Run full verification:
+
+   ```sh
+   pnpm test
+   pnpm build
+   pnpm build:lib
+   git diff --check
+   ```
+
+3. Update version metadata if the release changes the package version.
+
+4. Commit the release metadata and release notes:
+
+   ```sh
+   git commit -m "chore(release): prepare v0.4-beta.1"
+   ```
+
+5. Create an annotated tag:
+
+   ```sh
+   git tag -a v0.4-beta.1 -m "v0.4-beta.1"
+   ```
+
+6. Push the branch and tag:
+
+   ```sh
+   git push origin main
+   git push origin v0.4-beta.1
+   ```
+
+7. Create a GitHub prerelease with detailed release notes:
+
+   ```sh
+   gh release create v0.4-beta.1 \
+     --repo Albert-PZY/typora-web \
+     --title "v0.4-beta.1" \
+     --notes-file docs/releases/v0.4-beta.1.md \
+     --prerelease
+   ```
+
+## Release Notes Format
+
+Release notes must be written in Markdown and include:
+
+- Version and release date.
+- Target commit or branch.
+- Stability status.
+- Summary.
+- Changes grouped by category, such as `Features`, `Fixes`, `Documentation`,
+  `Repository`, `Breaking Changes`, and `Verification`.
+- Migration notes when behavior or APIs changed.
+- Known limitations.
+- Verification commands that were run and their result.
+
+Use this template:
+
+```md
+# v0.4-beta.1
+
+Release date: YYYY-MM-DD
+Target: main @ <commit>
+Stability: Beta prerelease, not production-ready
+
+## Summary
+
+...
+
+## Features
+
+- ...
+
+## Fixes
+
+- ...
+
+## Documentation
+
+- ...
+
+## Repository
+
+- ...
+
+## Breaking Changes
+
+- None.
+
+## Verification
+
+- `pnpm test` passed.
+- `pnpm build` passed.
+- `pnpm build:lib` passed.
+- `git diff --check` passed.
+
+## Known Limitations
+
+- ...
+```
+
+## History Rewrite Policy
+
+If the project owner requests removal of unrelated upstream history, rewrite the
+branch so only project-owner-relevant commits remain. After a rewrite:
+
+- Delete obsolete upstream tags locally and remotely.
+- Force-push with `--force-with-lease`.
+- Publish a new beta release describing the rewrite.
+- Tell collaborators to reclone or reset their local branch.
