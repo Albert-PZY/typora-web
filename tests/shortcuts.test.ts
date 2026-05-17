@@ -47,6 +47,15 @@ describe("common editing shortcuts", () => {
     expect(serialize(next.doc)).toBe("line  \nnext");
   });
 
+  test("Shift-Enter keeps following text after a hard break node", () => {
+    const next = apply(setup("line"), ["<Shift-Enter>", "next"]);
+    const paragraph = next.doc.firstChild;
+    expect(paragraph?.childCount).toBe(3);
+    expect(paragraph?.child(0).textContent).toBe("line");
+    expect(paragraph?.child(1).type.name).toBe("hard_break");
+    expect(paragraph?.child(2).textContent).toBe("next");
+  });
+
   test("Mod-Shift-K inserts an empty fenced code block shell", () => {
     const next = apply(setup(""), ["<Mod-Shift-K>"]);
     expect(serialize(next.doc)).toBe("```\n\n```");

@@ -13,6 +13,17 @@ function insertText(text: string): Command {
   };
 }
 
+function insertHardBreak(schema: Schema): Command {
+  return (state, dispatch) => {
+    if (dispatch) {
+      const node = schema.nodes.hard_break.create();
+      const tr = state.tr.replaceSelectionWith(node).scrollIntoView();
+      dispatch(tr);
+    }
+    return true;
+  };
+}
+
 function wrapSelection(open: string, close = open): Command {
   return (state, dispatch) => {
     const { from, to, empty } = state.selection;
@@ -62,7 +73,7 @@ export function commonShortcutKeymap(schema: Schema): Record<string, Command> {
     "Mod-b": wrapSelection("**"),
     "Mod-i": wrapSelection("*"),
     "Mod-k": insertEmptyLink(),
-    "Shift-Enter": insertText("  \n"),
+    "Shift-Enter": insertHardBreak(schema),
     "Mod-0": setBlockType(schema.nodes.paragraph),
     "Mod-1": setHeading(schema, 1),
     "Mod-2": setHeading(schema, 2),
