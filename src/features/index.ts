@@ -17,6 +17,7 @@ import { frontMatter } from "./front-matter.ts";
 import { heading } from "./heading.ts";
 import { highlight } from "./highlight.ts";
 import { hr } from "./hr.ts";
+import { htmlBlock } from "./html-block.ts";
 import { htmlComment } from "./html-comment.ts";
 import { image } from "./image.ts";
 import { link } from "./link.ts";
@@ -42,6 +43,7 @@ export const ALL_FEATURES: FeatureSpec[] = [
   link,
   image,
   hr,
+  htmlBlock,
   blockquote,
   heading,
   // task before list so its Enter command runs first (chainCommands order).

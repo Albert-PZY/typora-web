@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      dompurify:
+        specifier: ^3.4.3
+        version: 3.4.3
       katex:
         specifier: ^0.16.46
         version: 0.16.46

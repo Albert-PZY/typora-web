@@ -15,7 +15,7 @@ import {
 } from "./features/index.ts";
 import { schema } from "./schema.ts";
 
-const md: MarkdownIt = new MarkdownIt("commonmark", { html: false });
+const md: MarkdownIt = new MarkdownIt("commonmark", { html: true });
 for (const plugin of collectMdItPlugins()) md.use(plugin);
 
 // Preserve trailing whitespace inside paragraphs.

@@ -48,6 +48,7 @@
     "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
   },
   "dependencies": {
+    "dompurify": "^3.4.3",
     "katex": "^0.16.46",
     "markdown-it": "^14.1.1",
     "markdown-it-emoji": "^3.0.0",

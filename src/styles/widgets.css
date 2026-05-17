@@ -224,6 +224,17 @@
 .ProseMirror .toc-h5 { padding-left: 4.8em; }
 .ProseMirror .toc-h6 { padding-left: 6em; }
 
+/* ─── Sanitized CommonMark HTML blocks ───────────────────────────── */
+.ProseMirror html-block {
+  display: block;
+  margin: 0 0 1em;
+}
+.ProseMirror html-block .html-block-render {
+  display: flow-root;
+}
+.ProseMirror html-block .html-block-render > :first-child { margin-top: 0; }
+.ProseMirror html-block .html-block-render > :last-child { margin-bottom: 0; }
+
 /* ─── Emoji autocomplete (fixed-position popup) ──────────────────── */
 .ProseMirror .emoji-completion {
   position: fixed;
