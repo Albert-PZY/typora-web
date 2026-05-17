@@ -2,7 +2,6 @@ import type { Node as PMNode, Schema } from "prosemirror-model";
 import { Plugin } from "prosemirror-state";
 import type { NodeView } from "prosemirror-view";
 
-import { sanitizeHtml } from "../sanitize.ts";
 import type { FeatureSpec } from "./_types.ts";
 
 const HTML_COMMENT_BLOCK_RE = /^\s*<!--[\s\S]*?-->\s*$/;
@@ -34,18 +33,18 @@ class HtmlBlockView implements NodeView {
     const raw = rawHtml(node);
     this.dom.dataset.raw = raw;
 
-    const preview = document.createElement("div");
-    preview.className = "html-block-render";
+    const source = document.createElement("pre");
+    source.className = "html-block-render";
+    const code = document.createElement("code");
+    code.className = "html-block-source";
+    code.textContent = raw;
+    source.append(code);
 
     if (isCommentOnly(raw)) {
-      const comment = document.createElement("mark-comment");
-      comment.textContent = raw;
-      preview.append(comment);
-    } else {
-      preview.innerHTML = sanitizeHtml(raw);
+      code.classList.add("html-comment-source");
     }
 
-    this.dom.replaceChildren(preview);
+    this.dom.replaceChildren(source);
   }
 
   ignoreMutation(): boolean {

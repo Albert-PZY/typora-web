@@ -45,13 +45,13 @@ const scanInlineMath: InlineFeatureSpec["scan"] = (text, consumed) => {
         closeTo: j + 1,
         delimRanges: [
           { from: i, to: i + 1 },
-          { from: i + 1, to: j, className: "math-source-hidden" },
+          { from: i + 1, to: j, softInside: true },
           { from: j, to: j + 1 },
         ],
         widgetDecorations: [
           {
             pos: i + 1,
-            when: "always",
+            when: "outside",
             kind: "math-inline",
             attrs: { tex: inner },
             side: -1,
@@ -110,6 +110,7 @@ function mathBlockPlugin(md: MarkdownIt): void {
 class MathBlockView implements NodeView {
   dom: HTMLElement;
   contentDOM: HTMLElement;
+  private source: HTMLElement;
   private preview: HTMLElement;
 
   constructor(node: PMNode) {
@@ -119,20 +120,37 @@ class MathBlockView implements NodeView {
     root.append(source, preview);
     this.dom = root;
     this.contentDOM = source;
+    this.source = source;
     this.preview = preview;
+    source.hidden = true;
+    preview.setAttribute("contenteditable", "false");
+    preview.addEventListener("click", this.onPreviewClick);
     this.render(node);
   }
+
+  private onPreviewClick = (): void => {
+    this.dom.classList.add("math-source-open");
+    this.source.hidden = false;
+  };
 
   private render(node: PMNode): void {
     const result = renderMathToHtml(node.textContent, true);
     this.preview.dataset.mathState = result.ok ? "success" : "error";
     this.preview.innerHTML = result.html;
+    if (!result.ok) {
+      this.dom.classList.add("math-source-open");
+      this.source.hidden = false;
+    }
   }
 
   update(node: PMNode, _decorations: readonly Decoration[]): boolean {
     if (node.type.name !== "math_block") return false;
     this.render(node);
     return true;
+  }
+
+  destroy(): void {
+    this.preview.removeEventListener("click", this.onPreviewClick);
   }
 }
 

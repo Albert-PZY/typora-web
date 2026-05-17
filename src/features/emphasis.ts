@@ -24,7 +24,7 @@ import type { FeatureSpec, InlineFeatureSpec } from "./_types.ts";
 // bridged independent groups across whitespace (e.g. `_em_ __strong__`
 // became one big em span).
 
-const isAlnum = (c: string): boolean => /[A-Za-z0-9]/.test(c);
+const isAlnum = (c: string): boolean => /[\p{L}\p{N}]/u.test(c);
 
 function scanOneDelim(text: string, delim: string, consumed: Uint8Array, out: InlineSpan[]): void {
   const runs = scanRuns(text, delim, consumed);

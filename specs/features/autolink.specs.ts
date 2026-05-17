@@ -36,6 +36,30 @@ export const autolinkSpecs: FeatureSpecs = {
       ],
     },
     {
+      id: "bare-url-autolink",
+      label: "bare https URL — Typora-style autolink without angle brackets",
+      seed: "See https://spec.commonmark.org/0.31.2/ now",
+      events: [],
+      checkpoints: [
+        {
+          at: 0,
+          expect: "See <a:https://spec.commonmark.org/0.31.2/>https://spec.commonmark.org/0.31.2/</a> now|",
+        },
+      ],
+    },
+    {
+      id: "bare-url-trailing-punctuation",
+      label: "bare URL keeps trailing sentence punctuation outside the link",
+      seed: "Visit https://example.com/docs.",
+      events: [],
+      checkpoints: [
+        {
+          at: 0,
+          expect: "Visit <a:https://example.com/docs>https://example.com/docs</a>.|",
+        },
+      ],
+    },
+    {
       id: "non-url-not-touched",
       label: "<not a url!> — no scheme/email or HTML shape, stays plain text",
       seed: "<not a url!> ",

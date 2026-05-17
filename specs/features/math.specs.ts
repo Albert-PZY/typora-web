@@ -18,11 +18,11 @@ export const mathSpecs: FeatureSpecs = {
     },
     {
       id: "inline-math-edit",
-      label: "cursor inside inline math shows source delimiters",
+      label: "cursor inside inline math shows editable source",
       seed: "$E=mc^2$",
       events: ["<Home>"],
       checkpoints: [
-        { at: 1, expect: "|<g>$</g><math>E=mc^2</math><g>$</g>" },
+        { at: 1, expect: "|<g>$</g>E=mc^2<g>$</g>" },
       ],
     },
     {

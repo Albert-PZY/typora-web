@@ -110,5 +110,17 @@ export const emphasisSpecs: FeatureSpecs = {
       events: [],
       checkpoints: [{ at: 0, expect: "<i><b>1</b></i> |" }],
     },
+    {
+      id: "cjk-strong-adjacent-prose",
+      label: "Chinese prose around **strong** keeps every character visible",
+      seed: "使用 `F8` 切换**专注模式**，使用 `F9` 切换**打字机模式**。",
+      events: [],
+      checkpoints: [
+        {
+          at: 0,
+          expect: "使用 <c>F8</c> 切换<b>专注模式</b>，使用 <c>F9</c> 切换<b>打字机模式</b>。|",
+        },
+      ],
+    },
   ],
 };

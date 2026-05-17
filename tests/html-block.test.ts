@@ -42,13 +42,21 @@ describe("CommonMark HTML blocks", () => {
     expect(html).not.toContain("javascript:");
   });
 
-  test("editor view renders sanitized HTML and strips executable attributes", () => {
+  test("editor view displays HTML block source text instead of native HTML widgets", () => {
     const block = renderHtmlBlock(
-      '<section onclick="alert(1)"><strong>safe</strong><script>alert(1)</script></section>',
+      [
+        "<details>",
+        "<summary>More</summary>",
+        '<section onclick="alert(1)"><strong>safe</strong></section>',
+        "</details>",
+      ].join("\n"),
     );
 
-    expect(block.innerHTML).toContain("<strong>safe</strong>");
-    expect(block.innerHTML).not.toContain("onclick");
-    expect(block.innerHTML).not.toContain("<script");
+    expect(block.querySelector("details")).toBeNull();
+    expect(block.querySelector("summary")).toBeNull();
+    expect(block.querySelector("code.html-block-source")?.textContent).toContain("<details>");
+    expect(block.querySelector("code.html-block-source")?.textContent).toContain(
+      '<section onclick="alert(1)">',
+    );
   });
 });
