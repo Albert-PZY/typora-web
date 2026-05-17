@@ -212,8 +212,9 @@ export class SerializerState {
         closeMarks([]);
         this.write();
         inlineHandler(this, child);
-        // Atom nodes occupy 1 position in the textblock; track block offset.
-        blockOffset += child.nodeSize;
+        // Inline atom nodes occupy ProseMirror positions, but they are not part
+        // of parent.textContent. extRanges are textContent-based, so do not
+        // move blockOffset here.
         return;
       }
 

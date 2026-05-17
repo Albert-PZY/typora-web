@@ -62,6 +62,52 @@ export type NormalizeState = {
 
 type BlockPlan = { blockStart: number; spans: InlineSpan[] };
 
+type TextSegment = {
+  textFrom: number;
+  textTo: number;
+  pmFrom: number;
+  pmTo: number;
+};
+
+function textSegments(node: PMNode): TextSegment[] {
+  const segments: TextSegment[] = [];
+  let textOffset = 0;
+  let pmOffset = 0;
+  node.forEach((child) => {
+    if (child.isText) {
+      const len = child.text?.length ?? 0;
+      segments.push({
+        textFrom: textOffset,
+        textTo: textOffset + len,
+        pmFrom: pmOffset,
+        pmTo: pmOffset + child.nodeSize,
+      });
+      textOffset += len;
+    }
+    pmOffset += child.nodeSize;
+  });
+  return segments;
+}
+
+function textOffsetToPm(
+  segments: readonly TextSegment[],
+  offset: number,
+  assoc: -1 | 1,
+): number {
+  for (const segment of segments) {
+    if (offset > segment.textFrom && offset < segment.textTo) {
+      return segment.pmFrom + offset - segment.textFrom;
+    }
+    if (offset === segment.textFrom && assoc > 0) return segment.pmFrom;
+    if (offset === segment.textTo && assoc < 0) return segment.pmTo;
+  }
+  if (segments.length === 0) return 0;
+  const first = segments[0]!;
+  const last = segments[segments.length - 1]!;
+  if (offset <= first.textFrom) return first.pmFrom;
+  return last.pmTo;
+}
+
 // Walk the doc, return per-textblock parse plan + absolute-pos delim list.
 function computePlan(doc: PMNode): {
   blocks: Array<{ blockPos: number; plan: BlockPlan }>;
@@ -79,15 +125,18 @@ function computePlan(doc: PMNode): {
     const text = node.textContent;
     const spans = parseInline(text, parent);
     const blockStart = pos + 1;
+    const segments = textSegments(node);
+    const startPos = (offset: number) => blockStart + textOffsetToPm(segments, offset, 1);
+    const endPos = (offset: number) => blockStart + textOffsetToPm(segments, offset, -1);
     blocks.push({ blockPos: pos, plan: { blockStart, spans } });
     for (const s of spans) {
-      const spanFrom = blockStart + s.openFrom;
-      const spanTo = blockStart + s.closeTo;
+      const spanFrom = startPos(s.openFrom);
+      const spanTo = endPos(s.closeTo);
       if (s.delimRanges) {
         for (const dr of s.delimRanges) {
           delims.push({
-            from: blockStart + dr.from,
-            to: blockStart + dr.to,
+            from: startPos(dr.from),
+            to: endPos(dr.to),
             spanFrom,
             spanTo,
             forceVisible: dr.forceVisible,
@@ -97,14 +146,14 @@ function computePlan(doc: PMNode): {
           });
         }
       } else {
-        delims.push({ from: blockStart + s.openFrom, to: blockStart + s.openTo, spanFrom, spanTo });
-        delims.push({ from: blockStart + s.closeFrom, to: blockStart + s.closeTo, spanFrom, spanTo });
+        delims.push({ from: startPos(s.openFrom), to: endPos(s.openTo), spanFrom, spanTo });
+        delims.push({ from: startPos(s.closeFrom), to: endPos(s.closeTo), spanFrom, spanTo });
       }
       if (s.extraDecorations) {
         for (const ex of s.extraDecorations) {
           extras.push({
-            from: blockStart + ex.from,
-            to: blockStart + ex.to,
+            from: startPos(ex.from),
+            to: endPos(ex.to),
             nodeName: ex.nodeName,
             attrs: ex.attrs,
           });
@@ -113,7 +162,7 @@ function computePlan(doc: PMNode): {
       if (s.widgetDecorations) {
         for (const w of s.widgetDecorations) {
           widgets.push({
-            pos: blockStart + w.pos,
+            pos: startPos(w.pos),
             spanFrom,
             spanTo,
             when: w.when,
@@ -164,6 +213,9 @@ export function normalizeInlinePlugin(): Plugin<NormalizeState> {
         const { blockStart, spans } = plan;
         const blockEnd = blockStart + blockNode.content.size;
         const size = blockNode.content.size;
+        const segments = textSegments(blockNode);
+        const startPos = (offset: number) => textOffsetToPm(segments, offset, 1);
+        const endPos = (offset: number) => textOffsetToPm(segments, offset, -1);
 
         // Fast skip: if this block has no spans for ANY managed type AND
         // no existing managed marks on its text, there's nothing to
@@ -205,7 +257,9 @@ export function normalizeInlinePlugin(): Plugin<NormalizeState> {
           for (const s of spans) {
             if (s.type !== name) continue;
             const m = markType.create(s.attrs);
-            for (let i = s.from; i < s.to; i++) targetMarks[i] = m;
+            const from = startPos(s.from);
+            const to = endPos(s.to);
+            for (let i = from; i < to; i++) targetMarks[i] = m;
           }
           const currentMarks = new Array<import("prosemirror-model").Mark | null>(
             size,
@@ -233,7 +287,11 @@ export function normalizeInlinePlugin(): Plugin<NormalizeState> {
           tr.removeMark(blockStart, blockEnd, markType);
           for (const s of spans) {
             if (s.type === name)
-              tr.addMark(blockStart + s.from, blockStart + s.to, markType.create(s.attrs));
+              tr.addMark(
+                blockStart + startPos(s.from),
+                blockStart + endPos(s.to),
+                markType.create(s.attrs),
+              );
           }
           changed = true;
         }

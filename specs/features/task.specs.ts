@@ -30,6 +30,19 @@ export const taskSpecs: FeatureSpecs = {
       ],
     },
     {
+      id: "inline-marks-after-marker",
+      label: "inline code and strong stay aligned after a task marker",
+      seed: "- [x] 使用 `F8` 切换**专注模式**，使用 `F9` 切换**打字机模式**。",
+      events: [],
+      checkpoints: [
+        {
+          at: 0,
+          expect:
+            "<ul><li><checkbox checked/>使用 <c>F8</c> 切换<b>专注模式</b>，使用 <c>F9</c> 切换<b>打字机模式</b>。|</li></ul>",
+        },
+      ],
+    },
+    {
       id: "enter-propagates-marker",
       label: "Enter after task content seeds a new task sibling",
       seed: "",
