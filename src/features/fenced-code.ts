@@ -13,6 +13,7 @@ import {
 } from "prosemirror-view";
 
 import { leaveLineDraft } from "../block-draft.ts";
+import { createLatestTaskScheduler } from "../renderers/latest-task.ts";
 import { mermaidRenderer } from "../renderers/mermaid.ts";
 import type { FeatureSpec } from "./_types.ts";
 
@@ -58,6 +59,7 @@ import type { FeatureSpec } from "./_types.ts";
 //         "leaving" the lang input naturally resumes editing there.
 
 const FENCE_RE = /^```(\w*)$/;
+const DIAGRAM_RENDER_DELAY_MS = 120;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // lang-focus plugin state: which code_block (by pos) currently owns the
@@ -96,7 +98,8 @@ class CodeBlockView implements NodeView {
   private diagramEl: HTMLElement;
   private view: EditorView;
   private getPos: () => number | undefined;
-  private renderVersion = 0;
+  private diagramScheduler = createLatestTaskScheduler(DIAGRAM_RENDER_DELAY_MS);
+  private renderedDiagramKey = "";
 
   constructor(
     node: PMNode,
@@ -224,26 +227,37 @@ class CodeBlockView implements NodeView {
   private renderDiagram(node: PMNode): void {
     const lang = String(node.attrs.lang ?? "").trim().toLowerCase();
     if (lang !== "mermaid") {
-      this.dom.classList.remove("has-diagram");
+      this.diagramScheduler.cancel();
+      this.dom.classList.remove("has-diagram", "diagram-success", "diagram-error");
       this.diagramEl.replaceChildren();
       this.diagramEl.removeAttribute("data-diagram-state");
+      this.renderedDiagramKey = "";
       return;
     }
-    this.dom.classList.add("has-diagram");
     const code = node.textContent;
-    const version = ++this.renderVersion;
+    const diagramKey = `${lang}\u0000${code}`;
+    if (diagramKey === this.renderedDiagramKey) return;
+    this.renderedDiagramKey = diagramKey;
+    this.dom.classList.add("has-diagram");
+    this.dom.classList.remove("diagram-success", "diagram-error");
     this.diagramEl.dataset.diagramState = "loading";
     this.diagramEl.textContent = "";
-    mermaidRenderer.render(code).then((result) => {
-      if (version !== this.renderVersion) return;
-      if (result.state === "success") {
-        this.diagramEl.dataset.diagramState = "success";
-        this.diagramEl.innerHTML = result.svg;
-      } else {
-        this.diagramEl.dataset.diagramState = "error";
-        this.diagramEl.textContent = result.message;
-      }
-    });
+    this.diagramScheduler.schedule(
+      () => mermaidRenderer.render(code),
+      (result) => {
+        if (result.state === "success") {
+          this.dom.classList.add("diagram-success");
+          this.dom.classList.remove("diagram-error");
+          this.diagramEl.dataset.diagramState = "success";
+          this.diagramEl.innerHTML = result.svg;
+        } else {
+          this.dom.classList.add("diagram-error");
+          this.dom.classList.remove("diagram-success");
+          this.diagramEl.dataset.diagramState = "error";
+          this.diagramEl.textContent = result.message;
+        }
+      },
+    );
   }
 
   // The input is non-PM DOM; PM should not process clicks/keys inside it.
@@ -251,11 +265,20 @@ class CodeBlockView implements NodeView {
     return this.chromeEl.contains(e.target as Node);
   }
 
-  ignoreMutation(m: { target: Node }): boolean {
-    return this.chromeEl.contains(m.target) || this.diagramEl.contains(m.target);
+  ignoreMutation(m: { target: Node; type?: string; attributeName?: string | null }): boolean {
+    if (this.chromeEl.contains(m.target) || this.diagramEl.contains(m.target)) return true;
+    if (
+      m.target === this.dom &&
+      m.type === "attributes" &&
+      (m.attributeName === "class" || m.attributeName === "data-lang-focus")
+    ) {
+      return true;
+    }
+    return false;
   }
 
   destroy(): void {
+    this.diagramScheduler.cancel();
     this.inputEl.removeEventListener("input", this.onInput);
     this.inputEl.removeEventListener("keydown", this.onInputKeyDown);
   }

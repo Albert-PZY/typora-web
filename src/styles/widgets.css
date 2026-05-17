@@ -354,6 +354,9 @@
   white-space: normal;
 }
 .ProseMirror pre.has-diagram .diagram-panel { display: block; }
+.ProseMirror pre.has-diagram.diagram-success > code {
+  display: none;
+}
 .ProseMirror pre .diagram-panel[data-diagram-state="loading"]::before {
   content: "Rendering diagram";
   color: #888;
