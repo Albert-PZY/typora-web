@@ -235,6 +235,7 @@ export function createEditor(
       const t = e.target as Element | null;
       if (t && (editorHost.contains(t) || sourceHost.contains(t))) {
         e.preventDefault();
+        e.stopPropagation();
         controller.toggleFocusMode();
       }
       return;
@@ -243,6 +244,7 @@ export function createEditor(
       const t = e.target as Element | null;
       if (t && (editorHost.contains(t) || sourceHost.contains(t))) {
         e.preventDefault();
+        e.stopPropagation();
         controller.toggleTypewriterMode();
       }
       return;
@@ -255,10 +257,11 @@ export function createEditor(
     if (!t) return;
     if (!editorHost.contains(t) && !sourceHost.contains(t)) return;
     e.preventDefault();
+    e.stopPropagation();
     if (inSource) exitSource();
     else enterSource();
   };
-  window.addEventListener("keydown", onKey);
+  window.addEventListener("keydown", onKey, true);
 
   // Wire source editor focus/blur to the same callbacks as the editor.
   if (options.onFocus) {
@@ -339,7 +342,7 @@ export function createEditor(
       else view.focus();
     },
     destroy(): void {
-      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", onKey, true);
       sourceView?.destroy();
       view.destroy();
       wrap.remove();

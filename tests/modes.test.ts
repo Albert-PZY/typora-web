@@ -111,4 +111,37 @@ describe("editor modes", () => {
       host.remove();
     }
   });
+
+  test("Ctrl+/ toggles source mode without invoking CodeMirror line comments", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const markdown = [
+      "# typora-web 中文演示",
+      "",
+      "- [x] 使用 `F8` 切换**专注模式**，使用 `F9` 切换**打字机模式**。",
+    ].join("\n");
+    const editor = createEditor(host, { initialContent: markdown });
+
+    try {
+      editor.toggleSource();
+      const sourceContent = host.querySelector<HTMLElement>(".typora-web-source-editor .cm-content");
+      sourceContent?.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "/",
+          ctrlKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+
+      expect(editor.isSourceMode()).toBe(false);
+      expect(editor.getMarkdown()).not.toContain("<!--");
+      expect(editor.getMarkdown()).not.toContain("-->");
+      expect(editor.getMarkdown()).toContain("`F8`");
+      expect(editor.getMarkdown()).toContain("**专注模式**");
+    } finally {
+      editor.destroy();
+      host.remove();
+    }
+  });
 });
