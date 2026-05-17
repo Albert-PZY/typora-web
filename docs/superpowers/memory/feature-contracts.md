@@ -12,7 +12,7 @@ owned_paths:
 entrypoints:
   - src/features/index.ts
   - src/features/_types.ts
-last_verified_commit: 6d496b1
+last_verified_commit: 0982081
 status: active
 ---
 
@@ -45,7 +45,8 @@ Each supported Markdown or Typora behavior is implemented as a feature module un
 - Specs should describe user-observable behavior, not implementation internals.
 - Heavy renderers should be lazy-loaded when possible.
 - Feature UI must not break source round-trip.
-- Code block highlighting must preserve the `code_block` text as editable ProseMirror content. Use inline decorations over CodeMirror 5 runmode token offsets, not manual DOM replacement inside the NodeView content DOM.
+- Code block highlighting and editing are handled by embedded CodeMirror 6 editors. The ProseMirror `code_block` node remains the source of truth, and CodeMirror changes must dispatch ProseMirror transactions instead of replacing source DOM manually.
+- Rich block previews such as Mermaid, KaTeX block math, and sanitized HTML should keep editable source available. Successful rendered previews may hide source by default, but invalid source must remain visible and editable.
 
 ## Compatibility Notes
 

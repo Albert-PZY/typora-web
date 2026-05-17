@@ -15,7 +15,7 @@ owned_paths:
 entrypoints:
   - src/lib.ts
   - src/editor-api.ts
-last_verified_commit: 6d496b1
+last_verified_commit: 762c59f
 status: active
 ---
 
@@ -53,5 +53,6 @@ status: active
 ## Common Pitfalls
 
 - Direct ProseMirror marks for method-B inline syntax do not serialize unless their source delimiter text also exists in the document.
+- Inline atom nodes occupy ProseMirror positions but are absent from parent `textContent`; normalization and serializer code that starts from text offsets must map through real text-node segments before applying marks, decorations, widgets, or extRanges.
 - Parser token handlers should emit source delimiters when the inline feature expects them to be present.
 - NodeViews that add non-editable chrome must implement `stopEvent` and `ignoreMutation` for their chrome.
