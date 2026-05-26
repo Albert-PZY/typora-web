@@ -2,21 +2,35 @@ import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
 
 import contributing from "../CONTRIBUTING.md?raw";
 import readme from "../README.md?raw";
+import readmeZh from "../README_zh-CN.md?raw";
 import syntaxSurvey from "../docs/typora-syntax-survey.md?raw";
 
 describe("project documentation language order", () => {
-  test("README starts with a Chinese overview before the English guide", () => {
-    expect(readme.startsWith("# typora-web\n\n## 中文简介\n")).toBe(true);
-    expect(readme.indexOf("## 中文简介")).toBeLessThan(readme.indexOf("## English Overview"));
-    expect(readme).toContain("## 技术选型");
-    expect(readme).toContain("## 安装");
-    expect(readme).toContain("## 控制器 API");
-    expect(readme).toContain("## Markdown 支持");
-    expect(readme).toContain("## 架构");
-    expect(readme).toContain("## 开发");
+  test("README is English by default and links to the Chinese guide", () => {
+    expect(readme.startsWith("[中文](README_zh-CN.md)\n\n# Typora-Web\n")).toBe(true);
+    expect(readme).toContain("## Technical Choices");
+    expect(readme).toContain("## Install");
+    expect(readme).toContain("## Controller API");
+    expect(readme).toContain("## Markdown Support");
+    expect(readme).toContain("## Architecture");
+    expect(readme).toContain("## Development");
     expect(readme).toContain("TypeScript");
     expect(readme).toContain("ProseMirror");
     expect(readme).toContain("CodeMirror 6");
+    expect(readme).not.toContain("## 中文简介");
+  });
+
+  test("Chinese README links back to the English guide", () => {
+    expect(readmeZh.startsWith("[English](README.md)\n\n# Typora-Web\n")).toBe(true);
+    expect(readmeZh).toContain("## 技术选型");
+    expect(readmeZh).toContain("## 安装");
+    expect(readmeZh).toContain("## 控制器 API");
+    expect(readmeZh).toContain("## Markdown 支持");
+    expect(readmeZh).toContain("## 架构");
+    expect(readmeZh).toContain("## 开发");
+    expect(readmeZh).toContain("TypeScript");
+    expect(readmeZh).toContain("ProseMirror");
+    expect(readmeZh).toContain("CodeMirror 6");
   });
 
   test("CONTRIBUTING starts with Chinese contribution guidance", () => {

@@ -1,104 +1,69 @@
 # Release Process
 
-This project is currently unstable and must use beta releases until the project
-owner manually promotes a version to production.
-
 Reference:
 [GitHub releases documentation](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository).
 
 ## Version Format
 
-Use these tag formats:
+Use standard Semantic Versioning for both Git tags and package metadata.
 
-- Beta milestone releases: `vx.x-beta.x`
-- Production releases: `vx.x.x`
-
-Examples:
-
-```text
-v0.4-beta.1
-v0.4-beta.2
-v1.0.0
-```
-
-Production tags must only be used after the project owner explicitly decides a
-release is production-ready. Until then, all milestone releases are prereleases.
-
-## Package Version Metadata
-
-`package.json` must use valid SemVer. When the Git tag is `v0.4-beta.1`, the
-package version should be represented as `0.4.0-beta.1`.
-
-The Git tag keeps the owner-requested format. The package metadata keeps npm and
-tooling compatibility.
+- Git tags must use `vX.Y.Z`, for example `v0.8.0` or `v1.0.0`.
+- `package.json` must use the matching npm SemVer version without the leading
+  `v`, for example `0.8.0` or `1.0.0`.
+- Pre-release tags are not part of the normal release flow.
+- Moving compatibility tags such as `v0` and `v0.8` may be updated by
+  automation after a stable release is created.
 
 ## When To Release
 
 `main` is protected, so release-worthy work must first merge through a pull
-request. After a push lands on `main`, the `Auto Release` workflow decides
-whether to prepare a beta release from the Conventional Commit history since
-the latest beta tag.
+request. After a push lands on `main`, Release Please inspects the Conventional
+Commit history since the configured baseline or latest release.
 
 Automatic release rules:
 
-- `feat` creates the next beta minor, for example `v0.7-beta.2` to
-  `v0.8-beta.1`.
-- `fix` and `perf` create the next beta patch, for example `v0.7-beta.2` to
-  `v0.7-beta.3`.
-- A `!` marker or `BREAKING CHANGE:` footer creates the next beta major, for
-  example `v0.7-beta.2` to `v1.0-beta.1`.
-- `docs`, `test`, `ci`, `chore`, `build`, `style`, and `refactor` do not
-  publish by themselves.
-- Release preparation commits such as `chore(release): prepare v0.8-beta.1` are
-  ignored by the auto-release decision so the workflow cannot loop forever.
-
-Manual production releases remain owner-gated. Production tags must only be used
-after the project owner explicitly decides the package is production-ready.
+- `fix` and `perf` create the next patch version.
+- `feat` creates the next minor version.
+- A `!` marker or `BREAKING CHANGE:` footer creates the next major version.
+- `docs`, `test`, `ci`, `chore`, `build`, `style`, and `refactor` do not publish
+  by themselves.
 
 ## Automated Release Steps
 
 The preferred path is fully automated:
 
 1. Merge a Conventional Commit pull request into `main`.
-2. Let the `Auto Release` workflow inspect commits since the latest beta tag.
-3. If the change is releasable, it dispatches the `Release` workflow with the
-   computed beta tag and npm package version.
+2. Let the `Release Please` workflow open or update a release pull request.
+3. Review the generated changelog and version bump.
+4. Merge the release pull request after required checks pass.
+5. Let Release Please create the stable GitHub Release and tag.
+6. Let the workflow dispatch `Publish npm` from the release tag.
 
-The release workflow will:
+The release automation will:
 
-- Update `package.json` and `pnpm-lock.yaml`.
-- Run `pnpm verify`.
-- Push a `release/<tag>` branch.
-- Open a release pull request with a Conventional Commit title.
-- Enable auto-merge for that pull request.
-- Let the protected `main` rules run required checks before merge.
-- Create and push an annotated tag after the release pull request merges.
-- Create a GitHub Release.
-- Dispatch `Publish npm` from the release tag.
+- Update `package.json`.
+- Update `.release-please-manifest.json`.
+- Update `CHANGELOG.md` when Release Please has changes to record.
+- Create a stable `vX.Y.Z` Git tag.
+- Create a GitHub Release marked as the latest release.
+- Move `vX` and `vX.Y` compatibility tags to the release commit.
+- Dispatch npm publishing for the stable release tag.
 
 Documentation-only, test-only, CI-only, and maintenance-only pushes to `main`
-do not publish npm packages. npm publishing only runs after a release pull
-request has merged and a `v*` tag exists. The `Publish npm` workflow also keeps
-a tag-push trigger and a manual dispatch trigger as fallbacks, and it skips
-versions that are already published.
-
-The `Release` workflow can still be run manually as a fallback:
-
-1. Open `Actions -> Release -> Run workflow`.
-2. Enter the Git tag, for example `v0.8-beta.1`.
-3. Enter the npm package version, for example `0.8.0-beta.1`.
-4. Keep `prerelease` enabled for beta releases.
-5. Run the workflow.
+do not publish npm packages. npm publishing only runs after a stable `vX.Y.Z`
+release tag exists. The `Publish npm` workflow also keeps a tag-push trigger and
+a manual dispatch trigger as fallbacks, and it skips versions that are already
+published.
 
 The automated release path requires these repository secrets:
 
-- `RELEASE_TOKEN`: a GitHub token allowed to push release branches, enable
-  auto-merge, create tags, and create releases.
+- `RELEASE_TOKEN`: a GitHub token allowed to create release pull requests,
+  create tags, create releases, and dispatch workflows.
 - `NPM_TOKEN`: an npm token used by the npm publish workflow.
 
 ## Manual Release Fallback
 
-Use these steps only if GitHub Actions is unavailable.
+Use these steps only if Release Please is unavailable.
 
 1. Confirm the working tree has no unintended changes:
 
@@ -113,60 +78,65 @@ Use these steps only if GitHub Actions is unavailable.
    git diff --check
    ```
 
-3. Update version metadata if the release changes the package version.
+3. Confirm `package.json` already matches the intended stable release version.
 
-4. Commit the release metadata and release notes:
+4. Create an annotated tag from the verified `main` commit:
 
    ```sh
-   git commit -m "chore(release): prepare v0.4-beta.1"
+   git tag -a v0.8.0 -m "v0.8.0"
    ```
 
-5. Open a pull request, wait for required checks, and merge it into `main`.
-
-6. Create an annotated tag from the merged `main` commit:
+5. Push the tag:
 
    ```sh
-   git tag -a v0.4-beta.1 -m "v0.4-beta.1"
+   git push origin v0.8.0
    ```
 
-7. Push the tag:
+6. Create a stable GitHub Release:
 
    ```sh
-   git push origin v0.4-beta.1
-   ```
-
-8. Create a GitHub prerelease with detailed release notes:
-
-   ```sh
-   gh release create v0.4-beta.1 \
+   gh release create v0.8.0 \
      --repo Albert-PZY/typora-web \
-     --title "v0.4-beta.1" \
-     --notes-file docs/releases/v0.4-beta.1.md \
-     --prerelease
+     --title "v0.8.0" \
+     --generate-notes \
+     --latest
    ```
+
+7. Dispatch npm publishing if the tag push did not already trigger it:
+
+   ```sh
+   gh workflow run publish-npm.yml --ref v0.8.0
+   ```
+
+The `Manual Release` workflow can also create a stable release when the package
+version already matches the requested tag:
+
+```text
+Actions -> Manual Release -> Run workflow -> tag=v0.8.0
+```
 
 ## Release Notes Format
 
-Release notes must be written in Markdown and include:
+Release Please generates the changelog and GitHub Release notes from
+Conventional Commits. Manual notes should keep the same grouping style and
+include:
 
 - Version and release date.
 - Target commit or branch.
-- Stability status.
 - Summary.
-- Changes grouped by category, such as `Features`, `Fixes`, `Documentation`,
-  `Repository`, `Breaking Changes`, and `Verification`.
+- Changes grouped by category, such as `Features`, `Bug Fixes`,
+  `Performance`, `Documentation`, `Repository`, and `Breaking Changes`.
 - Migration notes when behavior or APIs changed.
 - Known limitations.
 - Verification commands that were run and their result.
 
-Use this template:
+Use this template for manual notes:
 
 ```md
-# v0.4-beta.1
+# v0.8.0
 
 Release date: YYYY-MM-DD
 Target: main @ <commit>
-Stability: Beta prerelease, not production-ready
 
 ## Summary
 
@@ -176,7 +146,7 @@ Stability: Beta prerelease, not production-ready
 
 - ...
 
-## Fixes
+## Bug Fixes
 
 - ...
 
@@ -211,5 +181,5 @@ branch so only project-owner-relevant commits remain. After a rewrite:
 
 - Delete obsolete upstream tags locally and remotely.
 - Force-push with `--force-with-lease`.
-- Publish a new beta release describing the rewrite.
+- Publish a new stable release describing the rewrite.
 - Tell collaborators to reclone or reset their local branch.

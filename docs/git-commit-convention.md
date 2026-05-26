@@ -75,7 +75,7 @@ Good split:
 ```text
 fix(shortcuts): keep text after hard breaks
 fix(diagrams): hide Mermaid source after successful render
-docs(release): document beta release process
+docs(release): document stable release process
 ci: remove GitHub Actions workflows
 ```
 
@@ -97,7 +97,7 @@ fix(diagrams): keep Mermaid source visible on syntax errors
 fix(shortcuts): preserve hard break cursor placement
 docs(agents): document Codex repository rules
 test(themes): cover built-in appearance switching
-chore(release): prepare v0.4-beta.1
+chore(release): release 0.8.0
 ```
 
 ## Pre-Commit Checklist

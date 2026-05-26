@@ -80,37 +80,34 @@ release path for Typora-Web.
 ## Automatic Release Flow
 
 After a pull request merges, GitHub pushes the squash commit to `main`. The
-`Auto Release` workflow then decides whether to publish:
+`Release Please` workflow then decides whether to publish:
 
-- `feat` creates the next beta minor.
-- `fix` and `perf` create the next beta patch.
-- A breaking-change marker creates the next beta major.
+- `feat` creates the next minor version.
+- `fix` and `perf` create the next patch version.
+- A breaking-change marker creates the next major version.
 - `docs`, `test`, `ci`, `chore`, `build`, `style`, and `refactor` do not publish
   by themselves.
 
-If a release is needed, `Auto Release` dispatches `Release`. `Release` opens a
-`release/<tag>` pull request, runs verification, enables auto-merge, creates the
-GitHub release after merge, pushes the tag, and dispatches `Publish npm` from
-that tag. `Publish npm` also supports tag-push and manual-dispatch fallbacks and
-skips versions that are already published.
+If a release is needed, Release Please opens or updates a release pull request.
+After that pull request merges, Release Please creates the stable `vX.Y.Z`
+GitHub Release and tag, then dispatches `Publish npm` from that tag. `Publish
+npm` also supports tag-push and manual-dispatch fallbacks and skips versions
+that are already published.
 
 ## Manual Fallback
 
 Use manual release only when automation is unavailable:
 
-1. Run the `Release` workflow from GitHub Actions.
-2. Provide a beta tag such as `v0.8-beta.1`.
-3. Provide the SemVer package version such as `0.8.0-beta.1`.
-4. Keep prerelease enabled.
-
-Do not create production tags unless the project owner explicitly approves a
-production-ready release.
+1. Confirm `package.json` already matches the intended stable version.
+2. Run the `Manual Release` workflow from GitHub Actions.
+3. Provide a stable tag such as `v0.8.0`.
+4. Let the workflow create the GitHub Release and dispatch npm publishing.
 
 ## Failure Handling
 
 - If direct push to `main` fails, stop and create a branch plus pull request.
 - If required checks fail, fix the branch and let the pull request re-run.
-- If auto release calculates an unexpected version, cancel the release pull
+- If Release Please calculates an unexpected version, cancel the release pull
   request before merge and fix the release rules in a separate pull request.
 - If npm publishing fails after a tag exists, fix the publish workflow or npm
   token and re-run the failed `Publish npm` job. Do not create a replacement tag
