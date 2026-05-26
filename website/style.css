@@ -169,6 +169,7 @@ html, body {
 .page-home {
   --editor-sidebar-width: min(260px, calc(100vw - 28px));
   --editor-sidebar-nudge: calc(var(--editor-sidebar-width) - 16px);
+  --editor-workspace-shift: clamp(112px, calc(var(--editor-sidebar-width) - 112px), 168px);
   padding-top: 16px;
   padding-bottom: 112px;
   max-width: 920px;
@@ -260,7 +261,11 @@ html, body {
   will-change: transform;
 }
 .page-home.sidebar-open .editor-workspace {
-  transform: translateX(clamp(0px, 3vw, 36px));
+  transform: translateX(var(--editor-workspace-shift));
+  width: min(100%, calc(100vw - var(--editor-sidebar-width) - 64px));
+}
+.page-home.sidebar-open .typora-web-wrap {
+  width: 100%;
 }
 .editor-sidebar {
   position: fixed;
@@ -548,6 +553,10 @@ html, body {
   }
   .page-home.sidebar-open .editor-workspace {
     transform: none;
+    width: 100%;
+  }
+  .page-home.sidebar-open .typora-web-wrap {
+    width: 100%;
   }
   .editor-statusbar-left {
     left: 14px;

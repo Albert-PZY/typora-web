@@ -22,7 +22,7 @@ Legend: `Supported`, `Partial`, `Backlog`.
 | Bullet lists and ordered lists | Supported | Common wrapping shortcuts are covered; complex loose-list fidelity remains a future target. |
 | Task lists | Supported | Task markers render and round-trip. |
 | Indented code blocks | Partial | Parses successfully but serializes as fenced code. |
-| Fenced code blocks | Supported | Backtick fences with optional info string, editable language chrome, and CodeMirror 5 token highlighting for common languages. |
+| Fenced code blocks | Supported | Backtick fences with optional info string, editable language chrome, and CodeMirror 6 highlighting with lazy language loading. |
 | Thematic breaks | Supported | Serializes as `---`. |
 | Tables | Supported | GFM table alignment is represented. |
 | YAML front matter | Supported | Document-leading front matter is parsed and serialized. |
@@ -32,7 +32,7 @@ Legend: `Supported`, `Partial`, `Backlog`.
 | Mermaid fences | Supported | `mermaid` code fences render lazy diagram panels and preserve source. |
 | Other diagram engines | Backlog | Typora also supports Flowchart.js, sequence diagrams, Vega, and Vega-Lite; this project currently supports Mermaid only. |
 | Footnote definitions | Backlog | Not implemented. |
-| Callouts / GitHub alerts | Backlog | Not implemented. |
+| Callouts / GitHub alerts | Supported | `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `DANGER`, and `CAUTION` render as alert blockquotes and round-trip. |
 
 ## Inline Syntax
 
@@ -42,12 +42,13 @@ Legend: `Supported`, `Partial`, `Backlog`.
 | Rule-of-three edge cases | Partial | Known edge cases remain for some delimiter runs. |
 | Inline code | Supported | Code spans are excluded from inline math parsing. |
 | Strikethrough | Supported | GFM-style `~~text~~`. |
+| Underline | Supported | Typora-style `<u>text</u>` inline underline. |
 | Links | Partial | Common inline, title, empty-text, and autolink cases work; some escaped-bracket and whitespace href cases remain. |
 | Reference-style links | Partial | Link resolves on parse; definition-block preservation is the remaining gap. |
 | Images | Supported | Inline image syntax is covered. |
 | Image size extensions | Backlog | Typora-style dimensions are not implemented. |
-| Autolinks | Supported | Angle-bracket URLs are supported. |
-| Bare URL autolinks | Backlog | Not implemented as a live extension. |
+| Autolinks | Supported | Angle-bracket URLs and email autolinks are supported. |
+| Bare URL autolinks | Supported | Typora-style bare `http://` and `https://` URLs link without angle brackets; trailing sentence punctuation stays outside the link. |
 | Hard breaks and soft breaks | Supported | Both are covered by parser and serializer tests. |
 | Backslash escapes | Partial | Round-trip is supported; input-time UX is limited. |
 | Inline HTML | Backlog | Paired with the HTML block trust-policy decision. |
@@ -79,4 +80,4 @@ Legend: `Supported`, `Partial`, `Backlog`.
 - Non-Mermaid diagram engines need separate lazy renderer adapters and error panels.
 - Reference definitions need a parser strategy that preserves definitions instead of allowing markdown-it to consume them.
 - Exact Typora list looseness, indentation shape, and alternate ordered-list markers need more fixture coverage.
-- Bare URL autolinking and footnotes should be added as explicit specs before implementation.
+- Footnotes should be added as explicit specs before implementation.

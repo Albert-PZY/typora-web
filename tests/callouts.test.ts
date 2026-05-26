@@ -2,7 +2,13 @@ import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
 import { DOMParser as PMDOMParser, DOMSerializer } from "prosemirror-model";
 import { TextSelection } from "prosemirror-state";
 
-import { convertCurrentBlockquoteCallout } from "../src/callouts.ts";
+import {
+  calloutAttrsFromSource,
+  convertCurrentBlockquoteCallout,
+  foldMarkdownCallouts,
+  getCalloutAttrsFromElement,
+  normalizeCalloutKind,
+} from "../src/callouts.ts";
 import { createState } from "../src/editor.ts";
 import { parse } from "../src/parser.ts";
 import { schema } from "../src/schema.ts";
@@ -11,6 +17,17 @@ import { commonShortcutKeymap } from "../src/shortcuts.ts";
 import { pretty, setup } from "./utils.ts";
 
 describe("callouts", () => {
+  test("normalizes known callout kinds and rejects unknown markers", () => {
+    expect(normalizeCalloutKind("note")).toBe("note");
+    expect(normalizeCalloutKind("TIP")).toBe("tip");
+    expect(normalizeCalloutKind("unknown")).toBeNull();
+    expect(calloutAttrsFromSource(" danger ")).toEqual({
+      alert: "danger",
+      alertSource: "DANGER",
+    });
+    expect(calloutAttrsFromSource("")).toBeNull();
+  });
+
   test.each([
     ["NOTE", "note"],
     ["TIP", "tip"],
@@ -66,6 +83,59 @@ describe("callouts", () => {
     expect(bq.attrs.alert).toBe("important");
     expect(bq.attrs.alertSource).toBe("IMPORTANT");
     expect(bq.textContent).toBe("body");
+  });
+
+  test("DOM parser accepts compatible callout class names", () => {
+    const host = document.createElement("div");
+    host.innerHTML = [
+      '<blockquote class="markdown-alert-warning"><p>warning</p></blockquote>',
+      '<blockquote class="md-alert-text-danger"><p>danger</p></blockquote>',
+      '<blockquote class="plain"><p>plain</p></blockquote>',
+    ].join("");
+    const blocks = Array.from(host.querySelectorAll<HTMLElement>("blockquote"));
+
+    expect(getCalloutAttrsFromElement(blocks[0]!)).toEqual({
+      alert: "warning",
+      alertSource: "WARNING",
+    });
+    expect(getCalloutAttrsFromElement(blocks[1]!)).toEqual({
+      alert: "danger",
+      alertSource: "DANGER",
+    });
+    expect(getCalloutAttrsFromElement(blocks[2]!)).toBeNull();
+  });
+
+  test("callout marker folding keeps inline content after the marker line", () => {
+    const doc = parse("> [!NOTE]\n> body\n> second");
+    const bq = doc.child(0);
+
+    expect(bq.attrs.alert).toBe("note");
+    expect(bq.childCount).toBe(1);
+    expect(bq.textContent).toBe("body\nsecond");
+    expect(serialize(doc)).toBe("> [!NOTE]\n> body\n> second");
+  });
+
+  test("callout marker folding drops only the marker line break", () => {
+    const hardBreakDoc = parse("> [!NOTE]  \n> body");
+    const hardBreakCallout = hardBreakDoc.child(0);
+
+    expect(hardBreakCallout.attrs.alert).toBe("note");
+    expect(hardBreakCallout.textContent).toBe("body");
+
+    const doc = schema.nodes.doc.create(null, [
+      schema.nodes.blockquote.create(null, [
+        schema.nodes.paragraph.create(null, [
+          schema.text("[!TIP]"),
+          schema.text("\nmarked", [schema.marks.em.create()]),
+        ]),
+      ]),
+    ]);
+    const folded = foldMarkdownCallouts(doc);
+    const foldedCallout = folded.child(0);
+
+    expect(foldedCallout.attrs.alert).toBe("tip");
+    expect(foldedCallout.textContent).toBe("marked");
+    expect(foldedCallout.firstChild?.firstChild?.marks[0]?.type.name).toBe("em");
   });
 
   test("pretty output distinguishes callouts from plain blockquotes", () => {

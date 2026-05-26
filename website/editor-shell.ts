@@ -104,7 +104,7 @@ const MENU_GROUPS = [
 ] as const;
 
 const DEFAULT_TREE: MarkdownTreeEntry = {
-  name: "typora-web",
+  name: "Typora-Web",
   path: "typora-web",
   kind: "directory",
   children: [

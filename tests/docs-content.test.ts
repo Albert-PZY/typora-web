@@ -2,6 +2,7 @@ import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
 
 import contributing from "../CONTRIBUTING.md?raw";
 import readme from "../README.md?raw";
+import syntaxSurvey from "../docs/typora-syntax-survey.md?raw";
 
 describe("project documentation language order", () => {
   test("README starts with a Chinese overview before the English guide", () => {
@@ -28,5 +29,20 @@ describe("project documentation language order", () => {
     expect(contributing).toContain("## 功能开发流程");
     expect(contributing).toContain("## 提交规则");
     expect(contributing).toContain("## 发布");
+  });
+
+  test("syntax survey reflects implemented demo features", () => {
+    expect(syntaxSurvey).toContain(
+      "| Callouts / GitHub alerts | Supported |",
+    );
+    expect(syntaxSurvey).toContain("| Underline | Supported |");
+    expect(syntaxSurvey).toContain("| Bare URL autolinks | Supported |");
+    expect(syntaxSurvey).toContain("CodeMirror 6 highlighting");
+    expect(syntaxSurvey).not.toContain(
+      "| Callouts / GitHub alerts | Backlog |",
+    );
+    expect(syntaxSurvey).not.toContain(
+      "| Bare URL autolinks | Backlog |",
+    );
   });
 });

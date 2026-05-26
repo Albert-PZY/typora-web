@@ -8,6 +8,20 @@ import { getHomeDemoMarkdown } from "../demo-content.ts";
 import { mountEditorShell } from "../editor-shell.ts";
 import { getLocale, onLocaleChange, t, translateTree } from "../i18n.ts";
 
+export function shouldSwitchHomeDemoLocale(args: {
+  currentLocale: string;
+  nextLocale: string;
+  currentMarkdown: string;
+  lastDemoMarkdown: string;
+  touched: boolean;
+}): boolean {
+  return (
+    args.currentLocale !== args.nextLocale &&
+    !args.touched &&
+    args.currentMarkdown === args.lastDemoMarkdown
+  );
+}
+
 export function homeRoute(root: HTMLElement): () => void {
   const cleanupNav = mountNav(root, "/");
 
@@ -42,7 +56,16 @@ export function homeRoute(root: HTMLElement): () => void {
 
   const host = main.querySelector(".hero-editor") as HTMLElement;
   let demoLocale = getLocale();
-  const editor = createEditor(host, { initialContent: getHomeDemoMarkdown(demoLocale) });
+  let demoTouched = false;
+  const markDemoTouched = (): void => {
+    demoTouched = true;
+  };
+  const editor = createEditor(host, {
+    initialContent: getHomeDemoMarkdown(demoLocale),
+  });
+  for (const eventName of ["beforeinput", "input", "paste", "drop", "cut"]) {
+    host.addEventListener(eventName, markDemoTouched);
+  }
   let lastDemoMarkdown = editor.getMarkdown();
   const status = main.querySelector(".editor-toolbar-status") as HTMLElement;
   let statusMessage: { key: string; vars?: Record<string, string | number | undefined> } | null = null;
@@ -53,9 +76,14 @@ export function homeRoute(root: HTMLElement): () => void {
   };
   const switchDemoIfUntouched = (): void => {
     const nextLocale = getLocale();
-    if (nextLocale === demoLocale) return;
-
-    if (editor.getMarkdown() === lastDemoMarkdown) {
+    const currentMarkdown = editor.getMarkdown();
+    if (shouldSwitchHomeDemoLocale({
+      currentLocale: demoLocale,
+      nextLocale,
+      currentMarkdown,
+      lastDemoMarkdown,
+      touched: demoTouched,
+    })) {
       editor.setMarkdown(getHomeDemoMarkdown(nextLocale));
       lastDemoMarkdown = editor.getMarkdown();
     }
@@ -78,6 +106,9 @@ export function homeRoute(root: HTMLElement): () => void {
   const cleanupLocale = onLocaleChange(applyLocale);
 
   return () => {
+    for (const eventName of ["beforeinput", "input", "paste", "drop", "cut"]) {
+      host.removeEventListener(eventName, markDemoTouched);
+    }
     cleanupLocale();
     cleanupNav();
     cleanupShell();

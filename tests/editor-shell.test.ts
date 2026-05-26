@@ -273,6 +273,23 @@ describe("editor shell controls", () => {
     }
   });
 
+  test("refreshes the open outline after document changes", async () => {
+    const { root, editor, cleanup } = mountShell("# One");
+
+    try {
+      root.querySelector<HTMLButtonElement>('[data-shell-action="sidebar-toggle"]')?.click();
+      root.querySelector<HTMLButtonElement>('[data-sidebar-mode="outline"]')?.click();
+      expect(root.querySelector(".editor-outline")?.textContent).toContain("One");
+
+      editor.setMarkdown("# One\n\n## Added");
+      await new Promise((resolve) => setTimeout(resolve, 700));
+
+      expect(root.querySelector(".editor-outline")?.textContent).toContain("Added");
+    } finally {
+      cleanup();
+    }
+  });
+
   test("tracks status bar stats and closes popovers on outside clicks", () => {
     const { root, cleanup } = mountShell("hello world\nsecond line");
 
@@ -523,6 +540,30 @@ describe("editor shell controls", () => {
       expect(outline.defaultPrevented).toBe(true);
       expect(root.querySelector<HTMLElement>(".editor-sidebar")?.getAttribute("aria-hidden")).toBe("false");
       expect(root.querySelector(".editor-outline")?.textContent).toContain("Title");
+
+      const files = new KeyboardEvent("keydown", {
+        key: "#",
+        ctrlKey: true,
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true,
+      });
+      proseMirror.dispatchEvent(files);
+      expect(files.defaultPrevented).toBe(true);
+      expect(root.querySelector(".editor-file-tree")?.textContent).toContain("demo.md");
+
+      proseMirror.dispatchEvent(new KeyboardEvent("keydown", {
+        key: "F8",
+        bubbles: true,
+        cancelable: true,
+      }));
+      proseMirror.dispatchEvent(new KeyboardEvent("keydown", {
+        key: "F9",
+        bubbles: true,
+        cancelable: true,
+      }));
+      expect(editor.isFocusMode()).toBe(true);
+      expect(editor.isTypewriterMode()).toBe(true);
     } finally {
       cleanup();
     }
