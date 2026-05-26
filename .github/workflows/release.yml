@@ -16,9 +16,13 @@ on:
         required: true
         default: true
         type: boolean
+  pull_request:
+    types: [closed]
+    branches: [main]
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: release
@@ -28,7 +32,17 @@ jobs:
   prepare-release:
     name: Prepare release
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     steps:
+      - name: Validate release token
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [[ -z "$RELEASE_TOKEN" ]]; then
+            echo "RELEASE_TOKEN secret is required so release PRs can trigger required checks."
+            exit 1
+          fi
+
       - name: Validate inputs
         env:
           RELEASE_TAG: ${{ inputs.tag }}
@@ -62,6 +76,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Check release target
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release tag already exists: $RELEASE_TAG"
+            exit 1
+          fi
+          if git ls-remote --exit-code --heads origin "release/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release branch already exists: release/$RELEASE_TAG"
+            exit 1
+          fi
+
       - name: Update package version
         env:
           PACKAGE_VERSION: ${{ inputs.package_version }}
@@ -78,29 +105,99 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "release/$RELEASE_TAG"
           git add package.json pnpm-lock.yaml
           git commit -m "chore(release): prepare $RELEASE_TAG"
 
-      - name: Create tag
+      - name: Push release branch
         env:
           RELEASE_TAG: ${{ inputs.tag }}
-        run: git tag -a "$RELEASE_TAG" -m "$RELEASE_TAG"
-
-      - name: Push release commit and tag
-        env:
-          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
-          git push origin HEAD:main
-          git push origin "$RELEASE_TAG"
+          git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --set-upstream origin "release/$RELEASE_TAG"
+
+      - name: Open release PR
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          PACKAGE_VERSION: ${{ inputs.package_version }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          cat > release-pr-body.md <<EOF
+          # Release $RELEASE_TAG
+
+          Summary:
+          - Prepare release $RELEASE_TAG.
+          - Update package version to $PACKAGE_VERSION.
+
+          Release metadata:
+          - Tag: $RELEASE_TAG.
+          - Package version: $PACKAGE_VERSION.
+          - Prerelease: $PRERELEASE.
+
+          Verification:
+          - pnpm verify.
+          EOF
+          pr_url=$(gh pr create \
+            --base main \
+            --head "release/$RELEASE_TAG" \
+            --title "chore(release): prepare $RELEASE_TAG" \
+            --body-file release-pr-body.md)
+          gh pr merge "$pr_url" --auto --squash --delete-branch
+
+  create-release:
+    name: Create release
+    runs-on: ubuntu-latest
+    if: >-
+      ${{
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.merged == true &&
+        startsWith(github.event.pull_request.head.ref, 'release/v')
+      }}
+    steps:
+      - name: Validate release token
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [[ -z "$RELEASE_TOKEN" ]]; then
+            echo "RELEASE_TOKEN secret is required so tag pushes can trigger npm publishing."
+            exit 1
+          fi
+
+      - name: Checkout main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Create and push release tag
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          release_tag="${HEAD_REF#release/}"
+          if [[ ! "$release_tag" =~ ^v[0-9]+\.[0-9]+(-beta\.[0-9]+|\.[0-9]+)$ ]]; then
+            echo "Invalid release branch: $HEAD_REF"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$release_tag" >/dev/null 2>&1; then
+            echo "Release tag already exists: $release_tag"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$release_tag" -m "$release_tag"
+          git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "$release_tag"
+          echo "RELEASE_TAG=$release_tag" >> "$GITHUB_ENV"
 
       - name: Create GitHub release
         env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.tag }}
-          PRERELEASE: ${{ inputs.prerelease }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
-          args=()
-          if [[ "$PRERELEASE" == "true" ]]; then
+          args=(--generate-notes)
+          if [[ "$RELEASE_TAG" == *-* ]]; then
             args+=(--prerelease)
           fi
-          gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --generate-notes "${args[@]}"
+          gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" "${args[@]}"
