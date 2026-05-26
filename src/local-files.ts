@@ -1,6 +1,6 @@
 export type FileResult =
   | { status: "opened"; name: string }
-  | { status: "saved"; name: string }
+  | { status: "saved"; name: string; handle?: FileSystemFileHandle }
   | { status: "downloaded"; name: string }
   | { status: "cancelled" }
   | { status: "unsupported" }
@@ -81,6 +81,49 @@ export async function pickMarkdownDirectory(): Promise<
   }
 }
 
+export async function readMarkdownFileHandle(
+  handle: FileSystemFileHandle,
+): Promise<
+  | { status: "opened"; handle: FileSystemFileHandle; name: string; text: string }
+  | { status: "error"; message: string }
+> {
+  try {
+    const file = await handle.getFile();
+    return { status: "opened", handle, name: handle.name || file.name, text: await file.text() };
+  } catch (error) {
+    return { status: "error", message: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+export async function createMarkdownFile(): Promise<
+  | { status: "created"; handle: FileSystemFileHandle; name: string }
+  | { status: "cancelled" }
+  | { status: "unsupported" }
+  | { status: "error"; message: string }
+> {
+  if (!window.showSaveFilePicker) return { status: "unsupported" };
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: "untitled.md",
+      types: [
+        {
+          description: "Markdown",
+          accept: { "text/markdown": [".md", ".markdown", ".mdown"] },
+        },
+      ],
+    });
+    const result = await writeMarkdownFile(handle, "");
+    if (result.status === "saved") return { status: "created", handle, name: result.name };
+    if (result.status === "error") return result;
+    return { status: "error", message: "Unable to create file" };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return { status: "cancelled" };
+    }
+    return { status: "error", message: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 function pickMarkdownFileWithInput(): Promise<
   | { status: "picked"; handle: null; file: File }
   | { status: "cancelled" }
@@ -119,7 +162,7 @@ export async function writeMarkdownFile(
     const writable = await handle.createWritable();
     await writable.write(markdown);
     await writable.close();
-    return { status: "saved", name: handle.name };
+    return { status: "saved", name: handle.name, handle };
   } catch (error) {
     return { status: "error", message: error instanceof Error ? error.message : String(error) };
   }

@@ -22,7 +22,10 @@ export function mountNav(host: HTMLElement, current: string): () => void {
     <a class="brand" href="#/"><img src="favicon.svg" alt="" aria-hidden="true" />typora-web</a>
     <div class="nav-links">
       <a href="#/specs" data-route="/specs" data-i18n="nav.specs"></a>
-      <a href="#/" data-route="/" data-i18n="nav.editor"></a>
+      <div class="editor-nav-group">
+        <a href="#/" data-route="/" data-i18n="nav.editor"></a>
+        ${current === "/" ? '<div class="editor-menu-bar" role="menubar" data-i18n-aria-label="home.toolbarLabel"></div>' : ""}
+      </div>
     </div>
     <div class="nav-actions">
       <a class="ext github-link nav-icon" href="${GITHUB}" target="_blank" rel="noopener" data-i18n-title="nav.githubTitle" data-i18n-aria-label="nav.githubTitle">${GITHUB_ICON}</a>

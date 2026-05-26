@@ -1,4 +1,5 @@
 import katex from "katex";
+import "katex/contrib/mhchem";
 
 export type MathRenderResult = {
   ok: boolean;

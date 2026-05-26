@@ -14,21 +14,20 @@ export function homeRoute(root: HTMLElement): () => void {
   const main = document.createElement("main");
   main.className = "page page-home";
   main.innerHTML = `
-    <div class="editor-menu-bar" role="menubar" data-i18n-aria-label="home.toolbarLabel"></div>
+    <aside class="editor-sidebar" aria-hidden="true">
+      <div class="editor-sidebar-tabs"></div>
+      <div class="editor-sidebar-body"></div>
+    </aside>
     <div class="editor-workspace">
-      <aside class="editor-sidebar" hidden>
-        <div class="editor-sidebar-tabs"></div>
-        <div class="editor-sidebar-body"></div>
-      </aside>
       <section class="hero-editor"></section>
     </div>
     <footer class="editor-statusbar">
-      <div class="editor-statusbar-left">
-        <button type="button" data-shell-action="sidebar-toggle" title="Toggle sidebar" aria-label="Toggle sidebar">‹</button>
-        <button type="button" data-shell-action="source" title="Toggle source mode" aria-label="Toggle source mode">&lt;/&gt;</button>
+      <div class="editor-statusbar-left editor-fixed-controls-left">
+        <button type="button" data-shell-action="sidebar-toggle" data-i18n-title="home.menu.sidebar" data-i18n-aria-label="home.menu.sidebar">‹</button>
+        <button type="button" data-shell-action="source" data-i18n-title="home.menu.source" data-i18n-aria-label="home.menu.source">&lt;/&gt;</button>
       </div>
       <span class="editor-toolbar-status" aria-live="polite"></span>
-      <div class="editor-statusbar-right">
+      <div class="editor-statusbar-right editor-fixed-controls-right">
         <button type="button" class="editor-word-count"></button>
         <div class="editor-stats-popover" hidden></div>
       </div>
@@ -67,7 +66,6 @@ export function homeRoute(root: HTMLElement): () => void {
     main,
     editor,
     host,
-    getStatus: () => status.textContent ?? "",
     setStatus,
   });
 

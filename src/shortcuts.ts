@@ -4,10 +4,12 @@ import type { Command } from "prosemirror-state";
 import { TextSelection } from "prosemirror-state";
 import { wrapInList } from "prosemirror-schema-list";
 
+import { convertCurrentBlockquoteCallout } from "./callouts.ts";
 import { insertMathBlockCommand } from "./features/math.ts";
 
 function insertHardBreak(schema: Schema): Command {
   return (state, dispatch) => {
+    if (convertCurrentBlockquoteCallout(state, dispatch)) return true;
     if (dispatch) {
       const node = schema.nodes.hard_break.create();
       const tr = state.tr.replaceSelectionWith(node).scrollIntoView();

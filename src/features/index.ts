@@ -26,6 +26,7 @@ import { list } from "./list.ts";
 import { math } from "./math.ts";
 import { strike } from "./strike.ts";
 import { subSup } from "./sub-sup.ts";
+import { underline } from "./underline.ts";
 import { table } from "./table.ts";
 import { task } from "./task.ts";
 import { toc } from "./toc.ts";
@@ -38,6 +39,7 @@ export const ALL_FEATURES: FeatureSpec[] = [
   code,
   strike,
   subSup,
+  underline,
   highlight,
   autolink,
   link,

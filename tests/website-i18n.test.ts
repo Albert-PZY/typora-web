@@ -23,9 +23,20 @@ describe("website i18n", () => {
   test("interpolates status messages", () => {
     setLocale("zh");
     expect(t("home.status.opened", { name: "note.md" })).toBe("已打开 note.md");
+    expect(t("home.status.folderOpened", { name: "notes" })).toBe("已打开文件夹 notes");
 
     setLocale("en");
     expect(t("home.status.opened", { name: "note.md" })).toBe("Opened note.md");
+    expect(t("home.status.notImplemented")).toBe("This menu item is a compatibility placeholder");
+  });
+
+  test("translates editor shell menu, sidebar, and status labels", () => {
+    setLocale("zh");
+
+    expect(t("home.menu.file")).toBe("文件");
+    expect(t("home.menu.source")).toBe("源代码模式");
+    expect(t("home.sidebar.outline")).toBe("大纲");
+    expect(t("home.stats.words", { count: 12 })).toBe("12 词");
   });
 
   test("translates text and common attributes in a DOM subtree", () => {

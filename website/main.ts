@@ -10,7 +10,6 @@ import "./style.css";
 
 import { startRouter } from "./router.ts";
 import { homeRoute } from "./routes/home.ts";
-import { specsRoute } from "./routes/specs.ts";
 
 const root = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -46,5 +45,11 @@ document.addEventListener("click", (e) => {
 
 startRouter(root, [
   { path: "/", handler: homeRoute },
-  { path: "/specs", handler: specsRoute },
+  {
+    path: "/specs",
+    handler: async (routeRoot) => {
+      const { specsRoute } = await import("./routes/specs.ts");
+      return specsRoute(routeRoot);
+    },
+  },
 ]);

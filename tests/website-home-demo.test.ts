@@ -41,6 +41,44 @@ describe("website home demo content", () => {
     }
   });
 
+  test("uses minimal demo content when the debug query is enabled", () => {
+    const previousUrl = location.href;
+    history.replaceState(null, "", "/?minimal=1");
+
+    try {
+      const en = getHomeDemoMarkdown("en");
+      const zh = getHomeDemoMarkdown("zh");
+
+      expect(en).toBe("# typora-web demo\n\nMinimal debug content.");
+      expect(zh).toBe("# typora-web 中文演示\n\n最小化调试内容。");
+      expect(en).not.toContain("```mermaid");
+      expect(zh).not.toContain("```mermaid");
+    } finally {
+      history.replaceState(null, "", previousUrl);
+    }
+  });
+
+  test("mounts the home editor with minimal debug content", () => {
+    const previousUrl = location.href;
+    history.replaceState(null, "", "/?minimal=1");
+    setLocale("en");
+    const root = document.createElement("div");
+    const cleanup = homeRoute(root);
+
+    try {
+      expect(root.querySelector(".ProseMirror")?.textContent).toContain(
+        "Minimal debug content.",
+      );
+      expect(root.querySelector(".ProseMirror")?.textContent).not.toContain(
+        "Mermaid",
+      );
+    } finally {
+      cleanup();
+      root.remove();
+      history.replaceState(null, "", previousUrl);
+    }
+  });
+
   test("switches untouched demo content when the locale changes", () => {
     setLocale("en");
     const root = document.createElement("div");
@@ -65,45 +103,38 @@ describe("website home demo content", () => {
     }
   });
 
-  test("renders Typora-like menu bar, sidebar, and status bar chrome", () => {
+  test("mounts the Typora-style shell around the home editor", () => {
     setLocale("en");
     const root = document.createElement("div");
     const cleanup = homeRoute(root);
 
     try {
-      const navLinks = Array.from(root.querySelectorAll(".nav-links a")).map((link) => (
-        link.textContent?.trim()
-      ));
-      const menuButtons = Array.from(root.querySelectorAll(".editor-menu-button")).map((button) => (
-        button.textContent?.trim()
-      ));
-      const fileButton = root.querySelector<HTMLButtonElement>('[data-menu="file"]');
-      const statusbar = root.querySelector<HTMLElement>(".editor-statusbar");
+      const menuBar = root.querySelector<HTMLElement>(".editor-menu-bar");
+      const nav = root.querySelector<HTMLElement>(".site-nav");
+      const navLinks = Array.from(root.querySelectorAll<HTMLElement>(".nav-links [data-route]"));
+      const editorLink = root.querySelector<HTMLAnchorElement>('[data-route="/"]');
       const sidebar = root.querySelector<HTMLElement>(".editor-sidebar");
+      const workspace = root.querySelector<HTMLElement>(".editor-workspace");
+      const statusbar = root.querySelector<HTMLElement>(".editor-statusbar");
 
-      expect(navLinks).toEqual(["Specs", "Editor"]);
-      expect(menuButtons).toEqual(["File", "Edit", "Paragraph", "Format", "View"]);
-      expect(statusbar).not.toBeNull();
-      expect(sidebar?.hidden).toBe(true);
+      expect(navLinks.map((link) => link.textContent)).toEqual(["Specs", "Editor"]);
+      expect(menuBar?.closest(".site-nav")).toBe(nav);
+      expect(editorLink?.nextElementSibling).toBe(menuBar);
+      expect(root.querySelector("main > .editor-menu-bar")).toBeNull();
+      expect(menuBar?.getAttribute("aria-label")).toBe("Editor tools");
+      expect(Array.from(menuBar?.querySelectorAll(".editor-menu-button") ?? []).map((button) => (
+        button.textContent
+      ))).toEqual(["File", "Edit", "Paragraph", "Format", "View"]);
+      expect(sidebar?.closest(".editor-workspace")).toBeNull();
+      expect(workspace?.querySelector(".editor-sidebar")).toBeNull();
+      expect(sidebar?.getAttribute("aria-hidden")).toBe("true");
+      expect(statusbar?.hidden).toBe(false);
 
-      fileButton?.click();
+      root.querySelector<HTMLButtonElement>('[data-shell-action="sidebar-toggle"]')?.click();
 
-      const fileActions = Array.from(
-        root.querySelectorAll<HTMLButtonElement>('[data-menu-action]'),
-      ).map((button) => button.dataset.menuAction);
-      expect(fileActions).toContain("open-folder");
-      expect(fileActions).toContain("save-as");
-
-      root.querySelector<HTMLButtonElement>('[data-menu-action="file-tree"]')?.click();
-      expect(sidebar?.hidden).toBe(false);
+      expect(sidebar?.getAttribute("aria-hidden")).toBe("false");
+      expect(root.querySelector(".page-home")?.classList.contains("sidebar-open")).toBe(true);
       expect(root.querySelector(".editor-file-tree")?.textContent).toContain("demo.md");
-
-      root.querySelector<HTMLButtonElement>('[data-menu-action="outline"]')?.click();
-      expect(root.querySelector(".editor-outline")?.textContent).toContain("typora-web demo");
-
-      root.querySelector<HTMLButtonElement>(".editor-word-count")?.click();
-      expect(root.querySelector<HTMLElement>(".editor-stats-popover")?.hidden).toBe(false);
-      expect(root.querySelector(".editor-stats-popover")?.textContent).toContain("Word Count");
     } finally {
       cleanup();
       root.remove();

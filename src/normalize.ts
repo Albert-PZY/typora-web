@@ -109,7 +109,7 @@ function textOffsetToPm(
 }
 
 // Walk the doc, return per-textblock parse plan + absolute-pos delim list.
-function computePlan(doc: PMNode): {
+function computePlan(doc: PMNode, state?: EditorState): {
   blocks: Array<{ blockPos: number; plan: BlockPlan }>;
   delims: DelimRange[];
   extras: ExtraDecoration[];
@@ -123,7 +123,7 @@ function computePlan(doc: PMNode): {
     if (!node.isTextblock) return true;
     if (node.type.spec.code) return false;
     const text = node.textContent;
-    const spans = parseInline(text, parent);
+    const spans = parseInline(text, parent, state ? { state } : undefined);
     const blockStart = pos + 1;
     const segments = textSegments(node);
     const startPos = (offset: number) => blockStart + textOffsetToPm(segments, offset, 1);
@@ -185,12 +185,12 @@ export function normalizeInlinePlugin(): Plugin<NormalizeState> {
     key: normalizeKey,
 
     state: {
-      init: (_, state) => computePlan(state.doc),
+      init: (_, state) => computePlan(state.doc, state),
       apply: (tr, prev, _oldState, newState) =>
         // Skip the doc walk when nothing in the doc changed — selection-
         // only transactions are very common (every keystroke that moves
         // the cursor) and the cached plan stays valid for them.
-        tr.docChanged ? computePlan(newState.doc) : prev,
+        tr.docChanged ? computePlan(newState.doc, newState) : prev,
     },
 
     appendTransaction(_transactions, _oldState, newState) {

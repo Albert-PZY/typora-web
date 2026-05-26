@@ -424,6 +424,7 @@ class CodeBlockView implements NodeView {
         "diagram-error",
         "diagram-source-open",
       );
+      this.diagramEl.hidden = false;
       this.diagramEl.replaceChildren();
       this.diagramEl.removeAttribute("data-diagram-state");
       this.renderedDiagramKey = "";
@@ -437,6 +438,7 @@ class CodeBlockView implements NodeView {
     this.sourceFrameEl.classList.add("has-diagram");
     this.dom.classList.remove("diagram-success", "diagram-error");
     this.sourceFrameEl.classList.remove("diagram-success", "diagram-error");
+    this.diagramEl.hidden = false;
     this.diagramEl.dataset.diagramState = "loading";
     this.diagramEl.textContent = "";
     this.diagramScheduler.schedule(
@@ -447,6 +449,7 @@ class CodeBlockView implements NodeView {
           this.dom.classList.remove("diagram-error");
           this.sourceFrameEl.classList.add("diagram-success");
           this.sourceFrameEl.classList.remove("diagram-error");
+          this.diagramEl.hidden = false;
           this.diagramEl.dataset.diagramState = "success";
           this.diagramEl.innerHTML = result.svg;
         } else {
@@ -454,8 +457,9 @@ class CodeBlockView implements NodeView {
           this.dom.classList.remove("diagram-success");
           this.sourceFrameEl.classList.add("diagram-error");
           this.sourceFrameEl.classList.remove("diagram-success");
+          this.diagramEl.hidden = true;
           this.diagramEl.dataset.diagramState = "error";
-          this.diagramEl.textContent = result.message;
+          this.diagramEl.replaceChildren();
         }
       },
     );

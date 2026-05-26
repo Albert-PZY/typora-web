@@ -1,5 +1,9 @@
 export type MermaidLike = {
-  initialize(config: { startOnLoad: false; securityLevel: "strict" }): void;
+  initialize(config: {
+    startOnLoad: false;
+    securityLevel: "strict";
+    suppressErrorRendering: true;
+  }): void;
   render(id: string, code: string): Promise<{ svg: string }>;
 };
 
@@ -11,6 +15,7 @@ export type MermaidLoader = () => Promise<MermaidLike>;
 
 let renderSeq = 0;
 const RENDER_TIMEOUT_MS = 5000;
+const MERMAID_ERROR_SVG_RE = /Syntax error in text|mermaid version/i;
 
 function isMermaidBoundarySymbol(char: string | undefined): boolean {
   return !!char && !/[\s\p{L}\p{N}_]/u.test(char);
@@ -44,7 +49,11 @@ export function createMermaidRenderer(load: MermaidLoader, timeoutMs = RENDER_TI
   const getMermaid = async (): Promise<MermaidLike> => {
     if (!mermaidPromise) {
       mermaidPromise = load().then((mermaid) => {
-        mermaid.initialize({ startOnLoad: false, securityLevel: "strict" });
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: "strict",
+          suppressErrorRendering: true,
+        });
         return mermaid;
       });
     }
@@ -64,6 +73,9 @@ export function createMermaidRenderer(load: MermaidLoader, timeoutMs = RENDER_TI
           })(),
           timeout(timeoutMs),
         ]);
+        if (MERMAID_ERROR_SVG_RE.test(result.svg)) {
+          return { state: "error", message: "Mermaid syntax error" };
+        }
         return { state: "success", svg: result.svg };
       } catch (error) {
         return {

@@ -72,5 +72,36 @@ export const blockquoteSpecs: FeatureSpecs = {
         { at: 3, expect: "<bq>a\n|b</bq>" },
       ],
     },
+
+    {
+      id: "callout-note-renders",
+      label: "GitHub-style note callout renders as an alert block",
+      seed: "> [!NOTE]\n> body",
+      events: [],
+      checkpoints: [
+        { at: 0, expect: "<callout:NOTE>body|</callout>" },
+      ],
+    },
+
+    {
+      id: "callout-danger-renders",
+      label: "danger callout renders as a red alert block",
+      seed: "> [!DANGER]\n> risk",
+      events: [],
+      checkpoints: [
+        { at: 0, expect: "<callout:DANGER>risk|</callout>" },
+      ],
+    },
+
+    {
+      id: "callout-input-rule",
+      label: "typing a marker inside a blockquote turns it into a callout",
+      seed: "",
+      events: [">", " ", "[", "!", "N", "O", "T", "E", "]", "<Enter>", "b"],
+      checkpoints: [
+        { at: 9, expect: "<callout:NOTE>|</callout>" },
+        { at: 11, expect: "<callout:NOTE>\nb|</callout>" },
+      ],
+    },
   ],
 };

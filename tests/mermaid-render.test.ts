@@ -3,6 +3,7 @@ import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
 import { createEditor } from "../src/lib.ts";
 import {
   createMermaidRenderer,
+  mermaidRenderer,
   normalizeMermaidSourceForRender,
 } from "../src/renderers/mermaid.ts";
 
@@ -32,7 +33,28 @@ describe("mermaid renderer", () => {
     expect(result.state).toBe("success");
     if (result.state !== "success") throw new Error("expected Mermaid render success");
     expect(result.svg).toContain("<svg");
-    expect(calls).toEqual([{ startOnLoad: false, securityLevel: "strict" }]);
+    expect(calls).toEqual([{
+      startOnLoad: false,
+      securityLevel: "strict",
+      suppressErrorRendering: true,
+    }]);
+  });
+
+  test("treats Mermaid-generated syntax error SVG as an error state", async () => {
+    const renderer = createMermaidRenderer(async () => ({
+      initialize() {},
+      async render() {
+        return {
+          svg: '<svg><text>Syntax error in text</text><text>mermaid version 11.15.0</text></svg>',
+        };
+      },
+    }));
+
+    const result = await renderer.render("bad");
+
+    expect(result.state).toBe("error");
+    if (result.state !== "error") throw new Error("expected Mermaid syntax SVG to be rejected");
+    expect(result.message).toContain("Mermaid syntax error");
   });
 
   test("returns an error state when Mermaid rendering rejects", async () => {
@@ -118,6 +140,37 @@ describe("mermaid source visibility policy", () => {
 
       expect(wrapper?.classList.contains("diagram-source-open")).toBe(false);
     } finally {
+      editor.destroy();
+      host.remove();
+    }
+  });
+
+  test("hides failed Mermaid diagram panels while keeping the source editor mounted", async () => {
+    const originalRender = mermaidRenderer.render;
+    (mermaidRenderer as unknown as {
+      render: typeof originalRender;
+    }).render = async () => ({ state: "error", message: "Mermaid syntax error" });
+
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const editor = createEditor(host, {
+      initialContent: "```mermaid\nnot a graph\n```",
+    });
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 180));
+
+      const wrapper = host.querySelector<HTMLElement>(".code-block-node");
+      const panel = host.querySelector<HTMLElement>(".diagram-panel");
+
+      expect(wrapper?.classList.contains("diagram-error")).toBe(true);
+      expect(panel?.hidden).toBe(true);
+      expect(panel?.textContent).toBe("");
+      expect(host.querySelector(".typora-web-code-editor")).not.toBeNull();
+    } finally {
+      (mermaidRenderer as unknown as {
+        render: typeof originalRender;
+      }).render = originalRender;
       editor.destroy();
       host.remove();
     }

@@ -6,6 +6,7 @@ import { history, undo, redo } from "prosemirror-history";
 
 import { cursorRenderPlugin } from "./cursor-render.ts";
 import { syntaxHintsPlugin } from "./decorations.ts";
+import { documentMetadataPlugin } from "./document-metadata.ts";
 import { focusModePlugin } from "./modes.ts";
 import { collectKeymaps, collectPlugins } from "./features/index.ts";
 import { markdownInputRules, spaceBreaksStoredMarks } from "./input-rules.ts";
@@ -51,6 +52,7 @@ export function defaultPlugins(options: { cursorWidget?: boolean } = {}): Plugin
     focusModePlugin(),
     markdownInputRules(),
     spaceBreaksStoredMarks(),
+    documentMetadataPlugin(),
     normalizeInlinePlugin(),
     // Feature-contributed plugins sit after normalize (so block-draft
     // watchers see the post-normalize doc) and before syntaxHints (so any

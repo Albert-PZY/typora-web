@@ -28,6 +28,7 @@ import { mathSpecs } from "./math.specs.ts";
 import { refDefSpecs } from "./ref-def.specs.ts";
 import { strikeSpecs } from "./strike.specs.ts";
 import { subSupSpecs } from "./sub-sup.specs.ts";
+import { underlineSpecs } from "./underline.specs.ts";
 import { tableSpecs } from "./table.specs.ts";
 import { taskSpecs } from "./task.specs.ts";
 import { tocSpecs } from "./toc.specs.ts";
@@ -39,6 +40,7 @@ export const ALL_SPECS: FeatureSpecs[] = [
   codeSpecs,
   strikeSpecs,
   subSupSpecs,
+  underlineSpecs,
   highlightSpecs,
   autolinkSpecs,
   linkSpecs,
