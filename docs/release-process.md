@@ -74,11 +74,13 @@ The release workflow will:
 - Let the protected `main` rules run required checks before merge.
 - Create and push an annotated tag after the release pull request merges.
 - Create a GitHub Release.
-- Trigger npm publishing from the pushed `v*` tag.
+- Dispatch `Publish npm` from the release tag.
 
 Documentation-only, test-only, CI-only, and maintenance-only pushes to `main`
-do not publish npm packages. npm publishing only runs when a `v*` tag is pushed
-after a release pull request has merged.
+do not publish npm packages. npm publishing only runs after a release pull
+request has merged and a `v*` tag exists. The `Publish npm` workflow also keeps
+a tag-push trigger and a manual dispatch trigger as fallbacks, and it skips
+versions that are already published.
 
 The `Release` workflow can still be run manually as a fallback:
 
@@ -92,7 +94,7 @@ The automated release path requires these repository secrets:
 
 - `RELEASE_TOKEN`: a GitHub token allowed to push release branches, enable
   auto-merge, create tags, and create releases.
-- `NPM_TOKEN`: an npm token used by the tag-triggered publish workflow.
+- `NPM_TOKEN`: an npm token used by the npm publish workflow.
 
 ## Manual Release Fallback
 

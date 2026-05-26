@@ -90,8 +90,9 @@ After a pull request merges, GitHub pushes the squash commit to `main`. The
 
 If a release is needed, `Auto Release` dispatches `Release`. `Release` opens a
 `release/<tag>` pull request, runs verification, enables auto-merge, creates the
-GitHub release after merge, pushes the tag, and lets `Publish npm` publish the
-package from that tag.
+GitHub release after merge, pushes the tag, and dispatches `Publish npm` from
+that tag. `Publish npm` also supports tag-push and manual-dispatch fallbacks and
+skips versions that are already published.
 
 ## Manual Fallback
 
