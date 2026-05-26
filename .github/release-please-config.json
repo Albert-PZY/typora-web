@@ -1,0 +1,12 @@
+{
+  "bootstrap-sha": "5056c4de86f7ca70ea36f35051c333976b8bb27c",
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "typora-web"
+    }
+  },
+  "include-component-in-tag": false,
+  "include-v-in-tag": true,
+  "pull-request-title-pattern": "chore${scope}: release ${version}"
+}

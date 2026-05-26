@@ -103,11 +103,11 @@ Every commit must follow the repository Conventional Commits policy in
 
 Follow `docs/release-process.md`.
 
-- Unstable milestone releases use tags like `v0.4-beta.1`.
-- Production releases use tags like `v1.0.0` only after the project owner
-  manually decides a build is production-ready.
-- Each large milestone must include a version tag and a GitHub Release with
-  detailed release notes.
+- Use stable SemVer tags such as `v0.8.0` or `v1.0.0`.
+- Do not create beta or prerelease tags as part of the normal release flow.
+- Let Release Please open the release pull request whenever possible.
+- Each release must include a version tag and a GitHub Release with release
+  notes.
 
 ## Current Development Priorities
 

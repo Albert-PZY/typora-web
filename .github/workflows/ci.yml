@@ -47,3 +47,6 @@ jobs:
 
       - name: Build library
         run: pnpm build:lib
+
+      - name: Pack dry run
+        run: pnpm pack --dry-run
