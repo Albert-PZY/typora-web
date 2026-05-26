@@ -8,6 +8,7 @@
 // features can compose common delim-run logic without reimplementing it.
 
 import type { Node as PMNode } from "prosemirror-model";
+import type { EditorState } from "prosemirror-state";
 
 import { collectInlineFeatures } from "./features/index.ts";
 
@@ -191,11 +192,12 @@ export function markExtRanges(
 export function parseInline(
   text: string,
   parentBlock: PMNode | null = null,
+  context?: { state: EditorState },
 ): InlineSpan[] {
   const out: InlineSpan[] = [];
   const consumed = new Uint8Array(text.length);
   for (const f of collectInlineFeatures()) {
-    for (const s of f.scan(text, consumed, parentBlock)) out.push(s);
+    for (const s of f.scan(text, consumed, parentBlock, context)) out.push(s);
   }
   return out;
 }

@@ -362,24 +362,29 @@ export const emoji: FeatureSpec = {
     // visually outside the emoji span — the source chars are hidden and
     // the user thinks the click did nothing.
     new Plugin({
-      props: {
-        handleClick(view, _pos, event) {
+      view(view) {
+        const handler = (event: Event) => {
           const target = event.target as HTMLElement | null;
           const glyph = target?.closest(".emoji-glyph") as HTMLElement | null;
-          if (!glyph) return false;
+          if (!glyph || !view.dom.contains(glyph)) return;
           const len = Number(glyph.getAttribute("data-len") ?? "0");
-          if (!len) return false;
-          const widgetPos = view.posAtDOM(glyph, 0);
-          if (widgetPos < 0) return false;
+          if (!len) return;
+          const widgetPos = Number(glyph.getAttribute("data-pos") ?? "-1");
+          if (widgetPos < 0) return;
           const tail = widgetPos + len;
-          if (tail > view.state.doc.content.size) return false;
+          if (tail > view.state.doc.content.size) return;
           event.preventDefault();
           view.dispatch(
             view.state.tr.setSelection(TextSelection.create(view.state.doc, tail)),
           );
           view.focus();
-          return true;
-        },
+        };
+        view.dom.addEventListener("click", handler);
+        return {
+          destroy() {
+            view.dom.removeEventListener("click", handler);
+          },
+        };
       },
     }),
   ],

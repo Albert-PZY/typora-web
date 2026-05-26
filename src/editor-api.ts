@@ -22,7 +22,9 @@ import {
 } from "./code-highlighter.ts";
 import { defaultPlugins } from "./editor.ts";
 import {
+  createMarkdownFile,
   pickMarkdownFile,
+  readMarkdownFileHandle,
   saveMarkdownFileAs as saveMarkdownAs,
   writeMarkdownFile,
   type FileResult,
@@ -59,6 +61,8 @@ export interface Editor {
   setTypewriterMode(enabled: boolean): void;
   isTypewriterMode(): boolean;
   openMarkdownFile(): Promise<FileResult>;
+  openMarkdownFileHandle(handle: FileSystemFileHandle): Promise<FileResult>;
+  createMarkdownFile(): Promise<FileResult>;
   saveMarkdownFile(): Promise<FileResult>;
   saveMarkdownFileAs(): Promise<FileResult>;
   getCurrentFileName(): string | null;
@@ -323,13 +327,33 @@ export function createEditor(
       this.setMarkdown(text);
       return { status: "opened", name: currentFileName };
     },
+    async openMarkdownFileHandle(handle: FileSystemFileHandle): Promise<FileResult> {
+      const result = await readMarkdownFileHandle(handle);
+      if (result.status === "error") return result;
+      currentFileHandle = result.handle;
+      currentFileName = result.name;
+      this.setMarkdown(result.text);
+      return { status: "opened", name: result.name };
+    },
+    async createMarkdownFile(): Promise<FileResult> {
+      const result = await createMarkdownFile();
+      if (result.status !== "created") return result;
+      currentFileHandle = result.handle;
+      currentFileName = result.name;
+      this.setMarkdown("");
+      return { status: "saved", name: result.name };
+    },
     async saveMarkdownFile(): Promise<FileResult> {
       if (!currentFileHandle) return this.saveMarkdownFileAs();
       return writeMarkdownFile(currentFileHandle, this.getMarkdown());
     },
     async saveMarkdownFileAs(): Promise<FileResult> {
       const result = await saveMarkdownAs(this.getMarkdown());
-      if (result.status === "saved" || result.status === "downloaded") {
+      if (result.status === "saved") {
+        currentFileHandle = result.handle ?? null;
+        currentFileName = result.name;
+      } else if (result.status === "downloaded") {
+        currentFileHandle = null;
         currentFileName = result.name;
       }
       return result;

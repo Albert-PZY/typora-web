@@ -30,6 +30,35 @@ describe("parser: block nodes", () => {
     expect(bq.child(0).type).toBe(schema.nodes.paragraph);
   });
 
+  test("blockquote alert marker becomes callout attrs", () => {
+    const doc = parse("> [!NOTE]\n> body");
+    const bq = doc.child(0);
+
+    expect(bq.type).toBe(schema.nodes.blockquote);
+    expect(bq.attrs.alert).toBe("note");
+    expect(bq.attrs.alertSource).toBe("NOTE");
+    expect(bq.textContent).toBe("body");
+  });
+
+  test("blockquote alert marker can be its own paragraph", () => {
+    const doc = parse("> [!WARNING]\n>\n> body");
+    const bq = doc.child(0);
+
+    expect(bq.attrs.alert).toBe("warning");
+    expect(bq.attrs.alertSource).toBe("WARNING");
+    expect(bq.childCount).toBe(1);
+    expect(bq.child(0).textContent).toBe("body");
+  });
+
+  test("blockquote supports danger callouts", () => {
+    const doc = parse("> [!DANGER]\n> serious risk");
+    const bq = doc.child(0);
+
+    expect(bq.attrs.alert).toBe("danger");
+    expect(bq.attrs.alertSource).toBe("DANGER");
+    expect(bq.textContent).toBe("serious risk");
+  });
+
   test("bullet list with items", () => {
     const doc = parse("- a\n- b");
     const ul = doc.child(0);

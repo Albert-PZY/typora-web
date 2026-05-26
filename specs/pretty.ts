@@ -107,7 +107,11 @@ function renderNode(n: Node): string {
       // with `> ` would pretty-render identically to an actual
       // blockquote under the old `> ${line}` form. Wrap with <bq> and
       // join multi-block children by newline.
-      return `<bq>${Array.from(el.children).map(renderNode).join("\n")}</bq>`;
+      {
+        const inner = Array.from(el.children).map(renderNode).join("\n");
+        const alert = el.getAttribute("data-alert-source");
+        return alert ? `<callout:${alert}>${inner}</callout>` : `<bq>${inner}</bq>`;
+      }
     case "pre": {
       // <pre data-lang="ts"><code>text</code></pre>. Recurse through the
       // `<code>` child instead of reading textContent — textContent skips

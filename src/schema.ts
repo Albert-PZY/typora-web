@@ -1,5 +1,6 @@
 import { Schema, type NodeSpec, type MarkSpec } from "prosemirror-model";
 
+import { getCalloutAttrsFromElement } from "./callouts.ts";
 import { collectMarks, collectNodes } from "./features/index.ts";
 
 const coreNodes: Record<string, NodeSpec> = {
@@ -31,8 +32,30 @@ const coreNodes: Record<string, NodeSpec> = {
     group: "block",
     content: "block+",
     defining: true,
-    parseDOM: [{ tag: "blockquote" }],
-    toDOM: () => ["blockquote", 0],
+    attrs: {
+      alert: { default: null },
+      alertSource: { default: null },
+    },
+    parseDOM: [
+      {
+        tag: "blockquote",
+        getAttrs: (el) => getCalloutAttrsFromElement(el as HTMLElement) ?? {},
+      },
+    ],
+    toDOM: (node) => {
+      const alert = node.attrs.alert as string | null;
+      const source = node.attrs.alertSource as string | null;
+      if (!alert || !source) return ["blockquote", 0];
+      return [
+        "blockquote",
+        {
+          class: `md-alert md-alert-${alert}`,
+          "data-alert": alert,
+          "data-alert-source": source,
+        },
+        0,
+      ];
+    },
   },
 
   code_block: {

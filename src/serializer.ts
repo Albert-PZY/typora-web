@@ -290,7 +290,11 @@ const coreBlockHandlers: Record<string, BlockHandler> = {
   },
 
   blockquote: (state, node) => {
-    state.wrapBlock("> ", null, node, () => state.renderBlockChildren(node));
+    const source = node.attrs.alertSource as string | null;
+    state.wrapBlock("> ", null, node, () => {
+      if (node.attrs.alert && source) state.write(`[!${source}]\n`);
+      state.renderBlockChildren(node);
+    });
   },
 
   code_block: (state, node) => {

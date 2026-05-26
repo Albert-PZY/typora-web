@@ -171,6 +171,17 @@ const DEMO_MARKDOWN: Record<Locale, string> = {
   zh: ZH_DEMO,
 };
 
+const MINIMAL_DEMO_MARKDOWN: Record<Locale, string> = {
+  en: "# typora-web demo\n\nMinimal debug content.",
+  zh: "# typora-web 中文演示\n\n最小化调试内容。",
+};
+
+function isMinimalDemo(): boolean {
+  if (typeof location === "undefined") return false;
+  return location.search.includes("minimal=1") || location.hash.includes("minimal=1");
+}
+
 export function getHomeDemoMarkdown(locale: Locale): string {
+  if (isMinimalDemo()) return MINIMAL_DEMO_MARKDOWN[locale];
   return DEMO_MARKDOWN[locale];
 }

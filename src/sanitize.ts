@@ -1,14 +1,18 @@
 import DOMPurify from "dompurify";
 
 const URL_ATTRS = new Set(["href", "src", "xlink:href", "action", "formaction"]);
-const UNSAFE_URL_RE = /^[\u0000-\u001F\s]*javascript:/i;
+const UNSAFE_URL_RE = /^[\u0000-\u001F\s]*(?:javascript|vbscript):/i;
+const UNSAFE_DATA_URL_RE = /^[\u0000-\u001F\s]*data:text\/html/i;
 
 function stripUnsafeUrls(html: string): string {
   const template = document.createElement("template");
   template.innerHTML = html;
   for (const el of template.content.querySelectorAll("*")) {
     for (const attr of Array.from(el.attributes)) {
-      if (URL_ATTRS.has(attr.name.toLowerCase()) && UNSAFE_URL_RE.test(attr.value)) {
+      if (
+        URL_ATTRS.has(attr.name.toLowerCase()) &&
+        (UNSAFE_URL_RE.test(attr.value) || UNSAFE_DATA_URL_RE.test(attr.value))
+      ) {
         el.removeAttribute(attr.name);
       }
     }

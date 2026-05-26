@@ -45,7 +45,31 @@ Create a beta release after each large milestone, including:
 Do not create a release for tiny documentation-only edits unless they are part
 of a milestone.
 
-## Required Release Steps
+## Automated Release Steps
+
+The preferred release path is the `Release` GitHub Actions workflow.
+
+1. Open `Actions -> Release -> Run workflow`.
+2. Enter the Git tag, for example `v0.8-beta.1`.
+3. Enter the npm package version, for example `0.8.0-beta.1`.
+4. Keep `prerelease` enabled for beta releases.
+5. Run the workflow.
+
+The workflow will:
+
+- Update `package.json` and `pnpm-lock.yaml`.
+- Run `pnpm verify`.
+- Commit release metadata with a Conventional Commit message.
+- Create and push an annotated tag.
+- Create a GitHub Release.
+- Trigger npm publishing from the pushed `v*` tag.
+
+Normal pushes to `main` do not publish npm packages. npm publishing only runs
+when a `v*` tag is pushed.
+
+## Manual Release Fallback
+
+Use these steps only if GitHub Actions is unavailable.
 
 1. Confirm the working tree has no unintended changes:
 
@@ -56,9 +80,7 @@ of a milestone.
 2. Run full verification:
 
    ```sh
-   pnpm test
-   pnpm build
-   pnpm build:lib
+   pnpm verify
    git diff --check
    ```
 

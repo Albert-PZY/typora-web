@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+coverage
+.playwright-mcp
 *.local
 
 # Editor directories and files

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
 import type { EditorView as CodeMirrorView } from "@codemirror/view";
+import { DOMParser as PMDOMParser } from "prosemirror-model";
 import { EditorView } from "prosemirror-view";
 
 import { createState } from "../src/editor.ts";
@@ -34,6 +35,16 @@ function mountHtmlBlock(markdown: string): {
   };
 }
 
+function htmlSourceEditor(block: HTMLElement): CodeMirrorView {
+  const source = block.querySelector<HTMLElement>("div.html-block-source");
+  const cmElement = source?.querySelector<HTMLElement>(".cm-editor") as
+    | (HTMLElement & { __typoraWebCodeMirrorView?: CodeMirrorView })
+    | null;
+  const editorView = cmElement?.__typoraWebCodeMirrorView;
+  if (!editorView) throw new Error("expected CodeMirror view");
+  return editorView;
+}
+
 describe("CommonMark HTML blocks", () => {
   test("source reveal uses inline text styling instead of an input frame", () => {
     const widgetsCss = readFileSync("src/styles/widgets.css", "utf8");
@@ -58,6 +69,29 @@ describe("CommonMark HTML blocks", () => {
     expect(serialize(doc)).toBe('<div class="note">hello</div>');
   });
 
+  test("ProseMirror DOM parse and serialize preserve raw HTML block attrs", () => {
+    const host = document.createElement("div");
+    const htmlBlock = document.createElement("html-block");
+    htmlBlock.dataset.raw = '<aside data-x="1">saved</aside>';
+    host.appendChild(htmlBlock);
+
+    const doc = PMDOMParser.fromSchema(schema).parse(host);
+
+    expect(doc.child(0).type).toBe(schema.nodes.html_block);
+    expect(doc.child(0).attrs.raw).toBe('<aside data-x="1">saved</aside>');
+    expect(schema.nodes.html_block.spec.toDOM?.(doc.child(0))).toEqual([
+      "html-block",
+      { "data-raw": '<aside data-x="1">saved</aside>', contenteditable: "false" },
+      ["code", '<aside data-x="1">saved</aside>'],
+    ]);
+  });
+
+  test("comment-only HTML blocks remain editable source text instead of preview atoms", () => {
+    const doc = parse("<!-- hidden note -->");
+    expect(doc.child(0).type.name).toBe("paragraph");
+    expect(doc.child(0).textContent).toBe("<!-- hidden note -->");
+  });
+
   test("render through DOMPurify instead of raw innerHTML", () => {
     const html = sanitizeHtml(
       '<div onclick="alert(1)"><strong>safe</strong><script>alert(1)</script><a href="javascript:alert(1)">bad</a></div>',
@@ -67,6 +101,20 @@ describe("CommonMark HTML blocks", () => {
     expect(html).not.toContain("onclick");
     expect(html).not.toContain("<script");
     expect(html).not.toContain("javascript:");
+  });
+
+  test("filters dangerous URL protocols beyond javascript", () => {
+    const html = sanitizeHtml(
+      [
+        '<a href="vbscript:msgbox(1)">bad</a>',
+        '<img src="data:text/html,<script>alert(1)</script>">',
+        '<a href="https://example.com">safe</a>',
+      ].join(""),
+    );
+
+    expect(html).not.toContain("vbscript:");
+    expect(html).not.toContain("data:text/html");
+    expect(html).toContain('href="https://example.com"');
   });
 
   test("editor view renders sanitized HTML preview and reveals highlighted source on click", async () => {
@@ -116,11 +164,7 @@ describe("CommonMark HTML blocks", () => {
       expect(source).not.toBeNull();
       expect(source?.hidden).toBe(false);
 
-      const cmElement = source!.querySelector<HTMLElement>(".cm-editor") as
-        | (HTMLElement & { __typoraWebCodeMirrorView?: CodeMirrorView })
-        | null;
-      const editorView = cmElement?.__typoraWebCodeMirrorView;
-      if (!editorView) throw new Error("expected CodeMirror view");
+      const editorView = htmlSourceEditor(block);
       const current = editorView.state.doc.toString();
       editorView.dispatch({
         changes: {
@@ -133,6 +177,48 @@ describe("CommonMark HTML blocks", () => {
       expect(block.querySelector(".html-block-preview em")?.textContent).toBe("updated");
       expect(block.querySelector(".html-block-preview")?.innerHTML).not.toContain("onclick");
       expect(serialize(view.state.doc)).toBe('<section onclick="alert(1)"><em>updated</em></section>');
+    } finally {
+      cleanup();
+    }
+  });
+
+  test("external document click closes the source view while source mousedown stays local", () => {
+    const { block, cleanup } = mountHtmlBlock('<div class="note">hello</div>');
+
+    try {
+      block.querySelector<HTMLElement>(".html-block-preview")?.dispatchEvent(
+        new MouseEvent("mousedown", { bubbles: true, cancelable: true }),
+      );
+      const source = block.querySelector<HTMLElement>("div.html-block-source");
+      expect(source?.hidden).toBe(false);
+
+      source?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+      expect(source?.hidden).toBe(false);
+
+      document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+      expect(block.classList.contains("html-source-open")).toBe(false);
+      expect(source?.hidden).toBe(true);
+    } finally {
+      cleanup();
+    }
+  });
+
+  test("node view update syncs source editor text from ProseMirror changes", () => {
+    const { block, view, cleanup } = mountHtmlBlock('<div class="note">hello</div>');
+
+    try {
+      const pos = 0;
+      view.dispatch(
+        view.state.tr.setNodeMarkup(pos, undefined, {
+          raw: '<section><strong>fresh</strong></section>',
+        }),
+      );
+
+      expect(block.dataset.raw).toBe('<section><strong>fresh</strong></section>');
+      expect(block.querySelector(".html-block-preview strong")?.textContent).toBe("fresh");
+      expect(htmlSourceEditor(block).state.doc.toString()).toBe(
+        '<section><strong>fresh</strong></section>',
+      );
     } finally {
       cleanup();
     }

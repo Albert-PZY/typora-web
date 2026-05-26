@@ -19,7 +19,7 @@ import type {
   Node as PMNode,
   Schema,
 } from "prosemirror-model";
-import type { Command, Plugin } from "prosemirror-state";
+import type { Command, EditorState, Plugin } from "prosemirror-state";
 
 import type { InlineSpan } from "../inline-parse.ts";
 import type { ParserState } from "../parser.ts";
@@ -84,6 +84,7 @@ export type InlineFeatureSpec = {
     text: string,
     consumed: Uint8Array,
     parentBlock?: PMNode | null,
+    context?: { state: EditorState },
   ) => InlineSpan[];
   markNames: string[];
   extRanges: (parent: PMNode) => Array<[number, number]>;

@@ -1,6 +1,7 @@
 import type { Mark } from "prosemirror-model";
 import { Plugin } from "prosemirror-state";
 
+import { getDocumentMetadata } from "../document-metadata.ts";
 import { markConsumed, type InlineSpan } from "../inline-parse.ts";
 import type { FeatureSpec, InlineFeatureSpec } from "./_types.ts";
 
@@ -35,8 +36,14 @@ type LoadStatus = "loading" | "ok" | "error";
 const imageLoadStatus = new Map<string, LoadStatus>();
 const IMAGE_LOAD_META = "image-load-status-changed";
 
-const scan: InlineFeatureSpec["scan"] = (text, consumed) => {
+function resolveImagePreviewSrc(src: string, rootUrl: string): string {
+  if (!rootUrl || !src.startsWith("/") || src.startsWith("//")) return src;
+  return `${rootUrl.replace(/\/+$/, "")}/${src.replace(/^\/+/, "")}`;
+}
+
+const scan: InlineFeatureSpec["scan"] = (text, consumed, _parentBlock, context) => {
   const out: InlineSpan[] = [];
+  const rootUrl = context?.state ? getDocumentMetadata(context.state).typoraRootUrl : "";
   IMAGE_RE.lastIndex = 0;
   let m: RegExpExecArray | null;
   while ((m = IMAGE_RE.exec(text))) {
@@ -60,6 +67,7 @@ const scan: InlineFeatureSpec["scan"] = (text, consumed) => {
 
     markConsumed(consumed, fullStart, fullEnd);
     const src = m[2]!;
+    const previewSrc = resolveImagePreviewSrc(src, rootUrl);
     const title = m[3] ?? null;
     const alt = m[1]!;
     const span: InlineSpan = {
@@ -80,7 +88,7 @@ const scan: InlineFeatureSpec["scan"] = (text, consumed) => {
     // Otherwise (probe pending or confirmed ok) render optimistically —
     // shows the image and only flashes back to edit-mode if a real load
     // error comes in. Avoids a long edit-mode delay on every valid image.
-    const status = src === "" ? null : imageLoadStatus.get(src) ?? null;
+    const status = src === "" ? null : imageLoadStatus.get(previewSrc) ?? null;
     const editMode = src === "" || status === "error";
     // Icon side=1: caret at openFrom renders to the LEFT of the icon, so
     // ArrowLeft from inside the source can park the cursor before the icon
@@ -106,7 +114,7 @@ const scan: InlineFeatureSpec["scan"] = (text, consumed) => {
           pos: closeTo,
           when: "always",
           kind: "image-render",
-          attrs: { src, alt, ...(title ? { title } : {}) },
+          attrs: { src: previewSrc, alt, ...(title ? { title } : {}) },
         },
       );
     } else {
@@ -147,6 +155,7 @@ function imageLoadProbePlugin(): Plugin {
         probeImg.src = src;
       };
       const scanDoc = (): void => {
+        const rootUrl = getDocumentMetadata(editorView.state).typoraRootUrl;
         editorView.state.doc.descendants((node) => {
           if (!node.isTextblock) return true;
           const text = node.textContent;
@@ -154,7 +163,7 @@ function imageLoadProbePlugin(): Plugin {
           let m: RegExpExecArray | null;
           while ((m = IMAGE_RE.exec(text))) {
             const src = m[2];
-            if (src) probe(src);
+            if (src) probe(resolveImagePreviewSrc(src, rootUrl));
           }
           return false;
         });

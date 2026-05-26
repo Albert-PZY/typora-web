@@ -13,6 +13,7 @@ import {
   collectParserPostProcessors,
   collectParserTokens,
 } from "./features/index.ts";
+import { foldMarkdownCallouts } from "./callouts.ts";
 import { schema } from "./schema.ts";
 
 const md: MarkdownIt = new MarkdownIt("commonmark", { html: true });
@@ -218,7 +219,7 @@ export function parse(src: string): PMNode {
   const tokens = md.parse(src, {});
   const state = new ParserState();
   for (const token of tokens) handleBlock(state, token);
-  let doc = state.finish();
+  let doc = foldMarkdownCallouts(state.finish());
   for (const f of collectParserPostProcessors()) doc = f(doc);
   return doc;
 }

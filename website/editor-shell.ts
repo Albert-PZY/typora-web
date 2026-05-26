@@ -1,15 +1,25 @@
 import type { Editor } from "../src/lib.ts";
+import { setBlockType } from "prosemirror-commands";
+import type { Command } from "prosemirror-state";
 import { pickMarkdownDirectory, type MarkdownTreeEntry } from "../src/local-files.ts";
+import { schema } from "../src/schema.ts";
 import { getEditorStats } from "./editor-stats.ts";
-import { t, translateTree } from "./i18n.ts";
+import { onLocaleChange, t, translateTree } from "./i18n.ts";
 
 type ShellOptions = {
   root: HTMLElement;
   main: HTMLElement;
   editor: Editor;
   host: HTMLElement;
-  getStatus(): string;
   setStatus(key: string, vars?: Record<string, string | number | undefined>): void;
+};
+
+type SidebarMode = "files" | "outline";
+
+type OutlineItem = {
+  id: string;
+  level: number;
+  text: string;
 };
 
 const MENU_GROUPS = [
@@ -110,13 +120,51 @@ const DEFAULT_TREE: MarkdownTreeEntry = {
   ],
 };
 
+const markdownResultKey = (
+  result: { status: string; name?: string; message?: string },
+): { key: string; vars?: Record<string, string | number | undefined> } => {
+  if (result.status === "opened") return { key: "home.status.opened", vars: { name: result.name } };
+  if (result.status === "saved") return { key: "home.status.saved", vars: { name: result.name } };
+  if (result.status === "downloaded") return { key: "home.status.downloaded", vars: { name: result.name } };
+  if (result.status === "cancelled") return { key: "home.status.cancelled" };
+  if (result.status === "unsupported") return { key: "home.status.unsupported" };
+  if (result.status === "error") {
+    return result.message
+      ? { key: "home.status.error", vars: { message: result.message } }
+      : { key: "home.status.failed" };
+  }
+  return { key: "home.status.error", vars: { message: result.status } };
+};
+
+const escapeHtml = (value: string): string => value
+  .replace(/&/g, "&amp;")
+  .replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;")
+  .replace(/"/g, "&quot;");
+
+function outlineId(index: number): string {
+  return `outline-${index}`;
+}
+
+function applyEditorCommand(editor: Editor, command: Command): boolean {
+  const handled = command(editor.view.state, (tr) => editor.view.dispatch(tr), editor.view);
+  if (handled) editor.focus();
+  return handled;
+}
+
 export function mountEditorShell(options: ShellOptions): () => void {
   const { root, main, editor, host, setStatus } = options;
-  let sidebarMode: "files" | "outline" = "files";
+  let sidebarMode: SidebarMode = "files";
   let sidebarOpen = false;
   let statusbarOpen = true;
   let currentTree = DEFAULT_TREE;
+  let activeFilePath = "";
+  let outlineSnapshot = "";
+  let outlineDocRef: unknown = null;
+  let activeOutlineId = "";
   let statsOpen = false;
+  let statsDocRef: unknown = null;
+  let statsMarkdown = "";
 
   const menuBar = root.querySelector(".editor-menu-bar") as HTMLElement;
   const sidebar = main.querySelector(".editor-sidebar") as HTMLElement;
@@ -142,6 +190,7 @@ export function mountEditorShell(options: ShellOptions): () => void {
     }
     sourceButton.classList.toggle("active", editor.isSourceMode());
     sidebarButton.classList.toggle("active", sidebarOpen);
+    statusbar.hidden = !statusbarOpen;
   }
 
   function buildMenus(): void {
@@ -151,7 +200,7 @@ export function mountEditorShell(options: ShellOptions): () => void {
         <div class="editor-menu-dropdown" role="menu" hidden>
           ${group.items.map(([action, label, shortcut]) => `
             <button type="button" role="menuitem" data-menu-action="${action}">
-              <span class="editor-menu-check"></span>
+              <span class="editor-menu-check" aria-hidden="true"></span>
               <span data-i18n="${label}"></span>
               <kbd>${shortcut}</kbd>
             </button>
@@ -172,24 +221,39 @@ export function mountEditorShell(options: ShellOptions): () => void {
 
   function renderTreeEntry(entry: MarkdownTreeEntry): string {
     if (entry.kind === "file") {
-      return `<li><button type="button" class="tree-file" data-file-path="${entry.path}"><span class="tree-icon">□</span>${entry.name}</button></li>`;
+      const active = entry.path === activeFilePath ? " active" : "";
+      return `<li><button type="button" class="tree-file${active}" data-file-path="${escapeHtml(entry.path)}"><span class="tree-icon" aria-hidden="true"></span>${escapeHtml(entry.name)}</button></li>`;
     }
-    return `<li><div class="tree-dir"><span class="tree-icon">■</span>${entry.name}</div><ul>${(entry.children ?? []).map(renderTreeEntry).join("")}</ul></li>`;
+    return `<li><div class="tree-dir"><span class="tree-icon" aria-hidden="true"></span>${escapeHtml(entry.name)}</div><ul>${(entry.children ?? []).map(renderTreeEntry).join("")}</ul></li>`;
   }
 
-  function headingItems(): Array<{ level: number; text: string }> {
-    const items: Array<{ level: number; text: string }> = [];
+  function headingItems(): OutlineItem[] {
+    const items: OutlineItem[] = [];
     editor.view.state.doc.descendants((node) => {
       if (node.type.name === "heading") {
-        items.push({ level: Number(node.attrs.level ?? 1), text: node.textContent });
+        items.push({
+          id: outlineId(items.length),
+          level: Number(node.attrs.level ?? 1),
+          text: node.textContent,
+        });
       }
     });
     return items;
   }
 
+  function currentOutlineSnapshot(): string {
+    return headingItems().map((item) => `${item.level}:${item.text}`).join("\n");
+  }
+
   function renderSidebar(): void {
     main.classList.toggle("sidebar-open", sidebarOpen);
-    sidebar.hidden = !sidebarOpen;
+    sidebar.setAttribute("aria-hidden", sidebarOpen ? "false" : "true");
+    if (!sidebarOpen) {
+      sidebarTabs.replaceChildren();
+      sidebarBody.replaceChildren();
+      renderMenuChecks();
+      return;
+    }
     sidebarTabs.innerHTML = `
       <button type="button" data-sidebar-mode="files" class="${sidebarMode === "files" ? "active" : ""}" data-i18n="home.sidebar.files"></button>
       <button type="button" data-sidebar-mode="outline" class="${sidebarMode === "outline" ? "active" : ""}" data-i18n="home.sidebar.outline"></button>
@@ -198,16 +262,39 @@ export function mountEditorShell(options: ShellOptions): () => void {
       sidebarBody.innerHTML = `<ul class="editor-file-tree">${renderTreeEntry(currentTree)}</ul>`;
     } else {
       const headings = headingItems();
+      outlineDocRef = editor.view.state.doc;
+      outlineSnapshot = headings.map((item) => `${item.level}:${item.text}`).join("\n");
       sidebarBody.innerHTML = headings.length
-        ? `<ol class="editor-outline">${headings.map((h) => `<li class="outline-level-${h.level}">${h.text}</li>`).join("")}</ol>`
+        ? `<ol class="editor-outline">${headings.map((h, index) => `
+          <li>
+            <button type="button" class="outline-item outline-level-${h.level}" data-outline-id="${h.id}" data-outline-index="${index}">
+              <span class="outline-bullet" aria-hidden="true"></span>
+              <span class="outline-text">${escapeHtml(h.text || "(empty heading)")}</span>
+              <span class="outline-level-label">H${h.level}</span>
+            </button>
+          </li>
+        `).join("")}</ol>`
         : `<p class="editor-sidebar-empty" data-i18n="home.sidebar.emptyOutline"></p>`;
     }
     translateTree(sidebar);
+    updateActiveOutline();
     renderMenuChecks();
   }
 
-  function renderStats(): void {
-    const stats = getEditorStats(editor.getMarkdown());
+  function renderStats(force = false): void {
+    statsPanel.hidden = !statsOpen;
+    statusbar.hidden = !statusbarOpen;
+
+    const sourceMode = editor.isSourceMode();
+    const docRef = sourceMode ? null : editor.view.state.doc;
+    if (!force && !sourceMode && docRef === statsDocRef) return;
+
+    const markdown = editor.getMarkdown();
+    if (!force && sourceMode && markdown === statsMarkdown) return;
+
+    const stats = getEditorStats(markdown);
+    statsDocRef = docRef;
+    statsMarkdown = markdown;
     wordButton.textContent = t("home.stats.words", { count: stats.words });
     statsPanel.innerHTML = `
       <div data-i18n="home.stats.title"></div>
@@ -219,11 +306,52 @@ export function mountEditorShell(options: ShellOptions): () => void {
       </dl>
     `;
     translateTree(statsPanel);
-    statsPanel.hidden = !statsOpen;
-    statusbar.hidden = !statusbarOpen;
   }
 
-  function openSidebar(mode: "files" | "outline"): void {
+  function editorHeadingElements(): HTMLElement[] {
+    return Array.from(host.querySelectorAll<HTMLElement>(
+      ".ProseMirror h1, .ProseMirror h2, .ProseMirror h3, .ProseMirror h4, .ProseMirror h5, .ProseMirror h6",
+    ));
+  }
+
+  function setActiveOutline(id: string, options: { reveal?: boolean } = {}): void {
+    const changed = id !== activeOutlineId;
+    activeOutlineId = id;
+    const reveal = options.reveal ?? changed;
+    for (const item of sidebarBody.querySelectorAll<HTMLButtonElement>(".outline-item")) {
+      const active = item.dataset.outlineId === id;
+      item.classList.toggle("active", active);
+      if (active && reveal) item.scrollIntoView?.({ block: "nearest" });
+    }
+  }
+
+  function updateActiveOutline(): void {
+    if (!sidebarOpen || sidebarMode !== "outline") return;
+    const headings = editorHeadingElements();
+    if (headings.length === 0) {
+      setActiveOutline("", { reveal: false });
+      return;
+    }
+
+    const viewportAnchor = 96;
+    let activeIndex = 0;
+    for (let i = 0; i < headings.length; i++) {
+      if (headings[i]!.getBoundingClientRect().top <= viewportAnchor) activeIndex = i;
+      else break;
+    }
+
+    const nextActiveId = outlineId(activeIndex);
+    setActiveOutline(nextActiveId);
+  }
+
+  function jumpToOutline(index: number): void {
+    const heading = editorHeadingElements()[index];
+    if (!heading) return;
+    heading.scrollIntoView({ block: "start", behavior: "smooth" });
+    setActiveOutline(outlineId(index), { reveal: true });
+  }
+
+  function openSidebar(mode: SidebarMode): void {
     sidebarMode = mode;
     sidebarOpen = true;
     renderSidebar();
@@ -234,31 +362,58 @@ export function mountEditorShell(options: ShellOptions): () => void {
     const result = await pickMarkdownDirectory();
     if (result.status === "picked") {
       currentTree = result.tree;
+      activeFilePath = "";
       setStatus("home.status.folderOpened", { name: result.tree.name });
       renderSidebar();
     } else if (result.status === "unsupported") {
       setStatus("home.status.folderUnsupported");
+    } else if (result.status === "cancelled") {
+      setStatus("home.status.cancelled");
     } else if (result.status === "error") {
       setStatus("home.status.error", { message: result.message });
     }
   }
 
+  async function openTreeFile(path: string): Promise<void> {
+    const file = findTreeFile(currentTree, path);
+    if (!file?.handle) {
+      setStatus("home.status.notImplemented");
+      return;
+    }
+    const result = await editor.openMarkdownFileHandle(file.handle);
+    const message = markdownResultKey(result);
+    setStatus(message.key, message.vars);
+    if (result.status === "opened") activeFilePath = path;
+    renderStats();
+    if (result.status === "opened" || sidebarMode === "outline") renderSidebar();
+  }
+
   function runMenuAction(action: string): void {
     setMenuOpen(null);
-    if (action === "open") void editor.openMarkdownFile().then((result) => {
-      if (result.status === "opened") setStatus("home.status.opened", { name: result.name });
-      else if (result.status === "unsupported") setStatus("home.status.unsupported");
-      else if (result.status === "cancelled") setStatus("home.status.cancelled");
-      else if (result.status === "error") setStatus("home.status.error", { message: result.message });
+    if (action === "new") void editor.createMarkdownFile().then((result) => {
+      const message = markdownResultKey(result);
+      setStatus(message.key, message.vars);
+      if (result.status === "saved") activeFilePath = "";
       renderStats();
+      if (sidebarOpen) renderSidebar();
+    });
+    else if (action === "open") void editor.openMarkdownFile().then((result) => {
+      const message = markdownResultKey(result);
+      setStatus(message.key, message.vars);
+      if (result.status === "opened") activeFilePath = "";
+      renderStats();
+      if (sidebarOpen) renderSidebar();
     });
     else if (action === "open-folder") void openFolder();
+    else if (action === "new-window") window.open(window.location.href, "_blank", "noopener");
     else if (action === "save") void editor.saveMarkdownFile().then((result) => {
-      if (result.status === "saved" || result.status === "downloaded") setStatus(`home.status.${result.status}`, { name: result.name });
+      const message = markdownResultKey(result);
+      setStatus(message.key, message.vars);
       renderStats();
     });
     else if (action === "save-as") void editor.saveMarkdownFileAs().then((result) => {
-      if (result.status === "saved" || result.status === "downloaded") setStatus(`home.status.${result.status}`, { name: result.name });
+      const message = markdownResultKey(result);
+      setStatus(message.key, message.vars);
       renderStats();
     });
     else if (action === "focus") editor.toggleFocusMode();
@@ -270,6 +425,19 @@ export function mountEditorShell(options: ShellOptions): () => void {
     else if (action === "statusbar") statusbarOpen = !statusbarOpen;
     else if (action === "select-all") document.execCommand("selectAll");
     else if (["undo", "redo", "cut", "copy", "paste"].includes(action)) document.execCommand(action);
+    else if (action === "print") window.print();
+    else if (action === "fullscreen") void toggleFullscreen();
+    else if (action === "paragraph") {
+      if (!applyEditorCommand(editor, setBlockType(schema.nodes.paragraph))) {
+        setStatus("home.status.notImplemented");
+      }
+    }
+    else if (/^heading-[1-3]$/.test(action)) {
+      const level = Number(action.at(-1));
+      if (!applyEditorCommand(editor, setBlockType(schema.nodes.heading, { level, style: "atx" }))) {
+        setStatus("home.status.notImplemented");
+      }
+    }
     else setStatus("home.status.notImplemented");
     renderMenuChecks();
     renderStats();
@@ -293,12 +461,21 @@ export function mountEditorShell(options: ShellOptions): () => void {
     const tab = target.closest<HTMLButtonElement>("[data-sidebar-mode]");
     if (tab?.dataset.sidebarMode === "files" || tab?.dataset.sidebarMode === "outline") {
       openSidebar(tab.dataset.sidebarMode);
+      return;
+    }
+    const fileButton = target.closest<HTMLButtonElement>("[data-file-path]");
+    if (fileButton?.dataset.filePath) void openTreeFile(fileButton.dataset.filePath);
+    const outlineButton = target.closest<HTMLButtonElement>("[data-outline-index]");
+    if (outlineButton?.dataset.outlineIndex) {
+      jumpToOutline(Number(outlineButton.dataset.outlineIndex));
+      return;
     }
   };
 
   const onStatusClick = (event: MouseEvent): void => {
     const target = event.target as HTMLElement;
     const action = target.closest<HTMLButtonElement>("[data-shell-action]")?.dataset.shellAction;
+    setMenuOpen(null);
     if (action === "sidebar-toggle") {
       sidebarOpen = !sidebarOpen;
       renderSidebar();
@@ -320,25 +497,42 @@ export function mountEditorShell(options: ShellOptions): () => void {
   };
 
   const onKeyDown = (event: KeyboardEvent): void => {
+    if (event.defaultPrevented) {
+      renderMenuChecks();
+      renderStats();
+      if (sidebarOpen && sidebarMode === "outline") renderSidebar();
+      return;
+    }
     if (!host.contains(event.target as Node | null) && event.target !== document.body) return;
     const mod = event.ctrlKey || event.metaKey;
     if (!mod && event.key !== "F8" && event.key !== "F9") return;
     const key = event.key.toLowerCase();
+    const logicalKey = key === "!" ? "1" : key === "#" ? "3" : key;
     const guarded = (
-      (mod && ["/", "s", "o", "f", "b", "i", "k"].includes(key)) ||
-      (mod && event.shiftKey && ["l", "1", "3"].includes(key)) ||
+      (mod && ["/", "s", "o"].includes(logicalKey)) ||
+      (mod && event.shiftKey && ["l", "1", "3"].includes(logicalKey)) ||
       event.key === "F8" ||
       event.key === "F9"
     );
     if (!guarded) return;
     event.preventDefault();
-    if (mod && event.shiftKey && key === "l") {
+    if (mod && event.shiftKey && logicalKey === "l") {
       sidebarOpen = !sidebarOpen;
       renderSidebar();
-    } else if (mod && event.shiftKey && key === "1") {
+    } else if (mod && event.shiftKey && logicalKey === "1") {
       openSidebar("outline");
-    } else if (mod && event.shiftKey && key === "3") {
+    } else if (mod && event.shiftKey && logicalKey === "3") {
       openSidebar("files");
+    } else if (mod && logicalKey === "o") {
+      runMenuAction("open");
+    } else if (mod && logicalKey === "s") {
+      runMenuAction(event.shiftKey ? "save-as" : "save");
+    } else if (mod && logicalKey === "/") {
+      runMenuAction("source");
+    } else if (event.key === "F8") {
+      runMenuAction("focus");
+    } else if (event.key === "F9") {
+      runMenuAction("typewriter");
     }
   };
 
@@ -347,21 +541,56 @@ export function mountEditorShell(options: ShellOptions): () => void {
   sidebar.addEventListener("click", onSidebarClick);
   statusbar.addEventListener("click", onStatusClick);
   document.addEventListener("mousedown", onDocumentMouseDown);
+  window.addEventListener("scroll", updateActiveOutline, { passive: true });
+  window.addEventListener("resize", updateActiveOutline);
   window.addEventListener("keydown", onKeyDown, true);
+  const cleanupLocale = onLocaleChange(() => {
+    translateTree(menuBar);
+    renderSidebar();
+    renderStats(true);
+  });
   renderSidebar();
   renderStats();
 
   const statsTimer = window.setInterval(() => {
     renderStats();
-    if (sidebarOpen && sidebarMode === "outline") renderSidebar();
+    if (sidebarOpen && sidebarMode === "outline") {
+      const nextOutlineDocRef = editor.view.state.doc;
+      if (nextOutlineDocRef !== outlineDocRef) {
+        outlineDocRef = nextOutlineDocRef;
+        const nextOutlineSnapshot = currentOutlineSnapshot();
+        if (nextOutlineSnapshot !== outlineSnapshot) renderSidebar();
+      }
+      updateActiveOutline();
+    }
   }, 600);
 
   return () => {
     window.clearInterval(statsTimer);
+    cleanupLocale();
     menuBar.removeEventListener("click", onMenuClick);
     sidebar.removeEventListener("click", onSidebarClick);
     statusbar.removeEventListener("click", onStatusClick);
     document.removeEventListener("mousedown", onDocumentMouseDown);
+    window.removeEventListener("scroll", updateActiveOutline);
+    window.removeEventListener("resize", updateActiveOutline);
     window.removeEventListener("keydown", onKeyDown, true);
   };
+}
+
+function findTreeFile(entry: MarkdownTreeEntry, path: string): MarkdownTreeEntry | null {
+  if (entry.path === path && entry.kind === "file") return entry;
+  for (const child of entry.children ?? []) {
+    const found = findTreeFile(child, path);
+    if (found) return found;
+  }
+  return null;
+}
+
+async function toggleFullscreen(): Promise<void> {
+  if (!document.fullscreenElement) {
+    await document.documentElement.requestFullscreen?.();
+  } else {
+    await document.exitFullscreen?.();
+  }
 }

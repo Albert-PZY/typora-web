@@ -28,6 +28,12 @@ describe("round-trip: blocks", () => {
     roundTripStable("Title\n===\n\n## Sub\n\nBody"));
   test("blockquote single paragraph", () => roundTripStable("> quoted text"));
   test("blockquote multi paragraph", () => roundTripStable("> first\n>\n> second"));
+  test("blockquote callout note", () => roundTripStable("> [!NOTE]\n> body"));
+  test("blockquote callout tip", () => roundTripStable("> [!TIP]\n> body"));
+  test("blockquote callout important", () => roundTripStable("> [!IMPORTANT]\n> body"));
+  test("blockquote callout warning", () => roundTripStable("> [!WARNING]\n> body"));
+  test("blockquote callout danger", () => roundTripStable("> [!DANGER]\n> body"));
+  test("blockquote callout caution", () => roundTripStable("> [!CAUTION]\n> body"));
   test("horizontal rule", () => roundTripStable("before\n\n---\n\nafter"));
   test("toc", () => roundTripStable("# Title\n\n[toc]\n\nbody"));
   test("toc uppercase normalizes", () =>
@@ -77,6 +83,7 @@ describe("round-trip: inline marks", () => {
   test("highlight", () => roundTripStable("==marked=="));
   test("subscript", () => roundTripStable("H~2~O"));
   test("superscript", () => roundTripStable("E=mc^2^"));
+  test("underline", () => roundTripStable("<u>under</u>"));
   test("highlight with spaces", () => roundTripStable("a ==hello world== b"));
   test("em", () => roundTripStable("*italic*"));
   test("strong (underscore)", () => roundTripStable("__bold__"));

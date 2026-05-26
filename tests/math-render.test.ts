@@ -11,6 +11,16 @@ describe("math renderer", () => {
     expect(result.html).toContain("math");
   });
 
+  test("renders mhchem chemical expressions through KaTeX", () => {
+    const result = renderMathToHtml("\\ce{H2O + CO2 -> H2CO3}", false);
+
+    expect(result.ok).toBe(true);
+    expect(result.html).toContain("katex");
+    expect(result.html).not.toContain("math-error");
+    expect(result.html).toContain("H");
+    expect(result.html).toContain("O");
+  });
+
   test("contains invalid TeX as an error result without throwing", () => {
     const result = renderMathToHtml("\\notacommand{", true);
     expect(result.ok).toBe(false);
