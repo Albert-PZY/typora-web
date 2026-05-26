@@ -1,6 +1,7 @@
 name: Publish npm
 
-on:
+"on":
+  workflow_dispatch:
   push:
     tags:
       - "v*"
@@ -17,7 +18,7 @@ jobs:
   publish:
     name: Publish package
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -40,7 +41,23 @@ jobs:
       - name: Verify
         run: pnpm verify
 
+      - name: Check package publish state
+        id: package
+        run: |
+          package_name=$(node -p "require('./package.json').name")
+          package_version=$(node -p "require('./package.json').version")
+          echo "name=$package_name" >> "$GITHUB_OUTPUT"
+          echo "version=$package_version" >> "$GITHUB_OUTPUT"
+          if pnpm view "$package_name@$package_version" version >/dev/null 2>&1; then
+            echo "$package_name@$package_version is already published."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "$package_name@$package_version is not published yet."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to npm
+        if: ${{ steps.package.outputs.exists != 'true' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: pnpm publish --access public --no-git-checks

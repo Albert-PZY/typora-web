@@ -201,3 +201,8 @@ jobs:
             args+=(--prerelease)
           fi
           gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" "${args[@]}"
+
+      - name: Dispatch npm publish workflow
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: gh workflow run publish-npm.yml --ref "$RELEASE_TAG"
