@@ -59,13 +59,22 @@ The workflow will:
 
 - Update `package.json` and `pnpm-lock.yaml`.
 - Run `pnpm verify`.
-- Commit release metadata with a Conventional Commit message.
-- Create and push an annotated tag.
+- Push a `release/<tag>` branch.
+- Open a release pull request with a Conventional Commit title.
+- Enable auto-merge for that pull request.
+- Let the protected `main` rules run required checks before merge.
+- Create and push an annotated tag after the release pull request merges.
 - Create a GitHub Release.
 - Trigger npm publishing from the pushed `v*` tag.
 
 Normal pushes to `main` do not publish npm packages. npm publishing only runs
 when a `v*` tag is pushed.
+
+The automated release path requires these repository secrets:
+
+- `RELEASE_TOKEN`: a GitHub token allowed to push release branches, enable
+  auto-merge, create tags, and create releases.
+- `NPM_TOKEN`: an npm token used by the tag-triggered publish workflow.
 
 ## Manual Release Fallback
 
@@ -92,20 +101,21 @@ Use these steps only if GitHub Actions is unavailable.
    git commit -m "chore(release): prepare v0.4-beta.1"
    ```
 
-5. Create an annotated tag:
+5. Open a pull request, wait for required checks, and merge it into `main`.
+
+6. Create an annotated tag from the merged `main` commit:
 
    ```sh
    git tag -a v0.4-beta.1 -m "v0.4-beta.1"
    ```
 
-6. Push the branch and tag:
+7. Push the tag:
 
    ```sh
-   git push origin main
    git push origin v0.4-beta.1
    ```
 
-7. Create a GitHub prerelease with detailed release notes:
+8. Create a GitHub prerelease with detailed release notes:
 
    ```sh
    gh release create v0.4-beta.1 \
