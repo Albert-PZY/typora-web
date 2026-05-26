@@ -11,6 +11,7 @@ import type { Case, FeatureSpecs, RenderCase } from "../_types.ts";
 import { autoPairSpecs } from "./auto-pair.specs.ts";
 import { autolinkSpecs } from "./autolink.specs.ts";
 import { blockquoteSpecs } from "./blockquote.specs.ts";
+import { calloutSpecs } from "./callout.specs.ts";
 import { codeSpecs } from "./code.specs.ts";
 import { emojiSpecs } from "./emoji.specs.ts";
 import { emphasisSpecs } from "./emphasis.specs.ts";
@@ -47,6 +48,7 @@ export const ALL_SPECS: FeatureSpecs[] = [
   imageSpecs,
   hrSpecs,
   blockquoteSpecs,
+  calloutSpecs,
   headingSpecs,
   taskSpecs,
   listSpecs,

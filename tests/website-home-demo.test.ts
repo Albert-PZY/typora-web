@@ -2,7 +2,7 @@ import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
 
 import { getHomeDemoMarkdown } from "../website/demo-content.ts";
 import { setLocale } from "../website/i18n.ts";
-import { homeRoute } from "../website/routes/home.ts";
+import { homeRoute, shouldSwitchHomeDemoLocale } from "../website/routes/home.ts";
 
 describe("website home demo content", () => {
   test("provides localized demo documents that cover completed editor features", () => {
@@ -14,16 +14,32 @@ describe("website home demo content", () => {
       expect(markdown).toContain("$$");
       expect(markdown).toContain("```ts");
       expect(markdown).toContain("<details>");
+      expect(markdown).toContain("<!--");
+      expect(markdown).toContain("---");
+      expect(markdown).toContain("<u>");
+      expect(markdown).toContain("![");
+      expect(markdown).toContain('<img src="favicon.svg"');
+      expect(markdown).toContain('width="96"');
+      expect(markdown).toContain("<https://example.com>");
+      expect(markdown).toContain("<hello@example.com>");
+      expect(markdown).toContain("> [!NOTE]");
+      expect(markdown).toContain("> [!TIP]");
+      expect(markdown).toContain("> [!IMPORTANT]");
+      expect(markdown).toContain("> [!WARNING]");
+      expect(markdown).toContain("> [!DANGER]");
+      expect(markdown).toContain("> [!CAUTION]");
+      expect(markdown).toContain("1. ");
+      expect(markdown).toContain("|:---|:---:|---:|");
       expect(markdown).toContain("- [x]");
       expect(markdown).toContain("[CommonMark");
     }
 
-    expect(en).toContain("# typora-web demo");
-    expect(en).toContain("Focus mode");
-    expect(en).toContain("| Feature |");
-    expect(zh).toContain("# typora-web 中文演示");
+    expect(en).toContain("# Typora-Web demo");
+    expect(en).toContain("focus mode");
+    expect(en).toContain("| Syntax |");
+    expect(zh).toContain("# Typora-Web 中文演示");
     expect(zh).toContain("专注模式");
-    expect(zh).toContain("| 功能 |");
+    expect(zh).toContain("| 语法 |");
   });
 
   test("mounts the home editor with the current locale demo", () => {
@@ -33,7 +49,7 @@ describe("website home demo content", () => {
 
     try {
       expect(root.querySelector(".ProseMirror")?.textContent).toContain(
-        "typora-web 中文演示",
+        "Typora-Web 中文演示",
       );
     } finally {
       cleanup();
@@ -49,8 +65,8 @@ describe("website home demo content", () => {
       const en = getHomeDemoMarkdown("en");
       const zh = getHomeDemoMarkdown("zh");
 
-      expect(en).toBe("# typora-web demo\n\nMinimal debug content.");
-      expect(zh).toBe("# typora-web 中文演示\n\n最小化调试内容。");
+      expect(en).toBe("# Typora-Web demo\n\nMinimal debug content.");
+      expect(zh).toBe("# Typora-Web 中文演示\n\n最小化调试内容。");
       expect(en).not.toContain("```mermaid");
       expect(zh).not.toContain("```mermaid");
     } finally {
@@ -86,21 +102,68 @@ describe("website home demo content", () => {
 
     try {
       expect(root.querySelector(".ProseMirror")?.textContent).toContain(
-        "typora-web demo",
+        "Typora-Web demo",
       );
 
       setLocale("zh");
 
       expect(root.querySelector(".ProseMirror")?.textContent).toContain(
-        "typora-web 中文演示",
+        "Typora-Web 中文演示",
       );
       expect(root.querySelector(".ProseMirror")?.textContent).not.toContain(
-        "typora-web demo",
+        "Typora-Web demo",
       );
     } finally {
       cleanup();
       root.remove();
     }
+  });
+
+  test("keeps demo content after the user starts editing", () => {
+    setLocale("en");
+    const root = document.createElement("div");
+    const cleanup = homeRoute(root);
+
+    try {
+      root.querySelector(".hero-editor")?.dispatchEvent(new InputEvent("beforeinput", {
+        bubbles: true,
+        inputType: "insertText",
+        data: "x",
+      }));
+      setLocale("zh");
+
+      expect(root.querySelector(".ProseMirror")?.textContent).toContain("Typora-Web demo");
+      expect(root.querySelector(".ProseMirror")?.textContent).not.toContain(
+        "Typora-Web 中文演示",
+      );
+    } finally {
+      cleanup();
+      root.remove();
+    }
+  });
+
+  test("keeps edited demo content when the locale changes", () => {
+    expect(shouldSwitchHomeDemoLocale({
+      currentLocale: "en",
+      nextLocale: "zh",
+      currentMarkdown: "edited",
+      lastDemoMarkdown: "edited",
+      touched: true,
+    })).toBe(false);
+    expect(shouldSwitchHomeDemoLocale({
+      currentLocale: "en",
+      nextLocale: "zh",
+      currentMarkdown: "external file",
+      lastDemoMarkdown: getHomeDemoMarkdown("en"),
+      touched: false,
+    })).toBe(false);
+    expect(shouldSwitchHomeDemoLocale({
+      currentLocale: "en",
+      nextLocale: "zh",
+      currentMarkdown: getHomeDemoMarkdown("en"),
+      lastDemoMarkdown: getHomeDemoMarkdown("en"),
+      touched: false,
+    })).toBe(true);
   });
 
   test("mounts the Typora-style shell around the home editor", () => {
@@ -111,6 +174,7 @@ describe("website home demo content", () => {
     try {
       const menuBar = root.querySelector<HTMLElement>(".editor-menu-bar");
       const nav = root.querySelector<HTMLElement>(".site-nav");
+      const brand = root.querySelector<HTMLElement>(".brand");
       const navLinks = Array.from(root.querySelectorAll<HTMLElement>(".nav-links [data-route]"));
       const editorLink = root.querySelector<HTMLAnchorElement>('[data-route="/"]');
       const sidebar = root.querySelector<HTMLElement>(".editor-sidebar");
@@ -118,6 +182,7 @@ describe("website home demo content", () => {
       const statusbar = root.querySelector<HTMLElement>(".editor-statusbar");
 
       expect(navLinks.map((link) => link.textContent)).toEqual(["Specs", "Editor"]);
+      expect(brand?.textContent).toBe("Typora-Web");
       expect(menuBar?.closest(".site-nav")).toBe(nav);
       expect(editorLink?.nextElementSibling).toBe(menuBar);
       expect(root.querySelector("main > .editor-menu-bar")).toBeNull();
@@ -134,7 +199,31 @@ describe("website home demo content", () => {
 
       expect(sidebar?.getAttribute("aria-hidden")).toBe("false");
       expect(root.querySelector(".page-home")?.classList.contains("sidebar-open")).toBe(true);
+      expect(root.querySelector(".editor-file-tree")?.textContent).toContain("Typora-Web");
       expect(root.querySelector(".editor-file-tree")?.textContent).toContain("demo.md");
+    } finally {
+      cleanup();
+      root.remove();
+    }
+  });
+
+  test("shows shell status messages from home route actions", () => {
+    setLocale("en");
+    const root = document.createElement("div");
+    const cleanup = homeRoute(root);
+
+    try {
+      const menuBar = root.querySelector<HTMLElement>(".editor-menu-bar");
+      const action = document.createElement("button");
+      action.type = "button";
+      action.dataset.menuAction = "unknown";
+      menuBar?.append(action);
+
+      action.click();
+
+      expect(root.querySelector(".editor-toolbar-status")?.textContent).toBe(
+        "This menu item is a compatibility placeholder",
+      );
     } finally {
       cleanup();
       root.remove();

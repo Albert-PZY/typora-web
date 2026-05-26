@@ -34,28 +34,37 @@ tooling compatibility.
 
 ## When To Release
 
-Create a beta release after each large milestone, including:
+`main` is protected, so release-worthy work must first merge through a pull
+request. After a push lands on `main`, the `Auto Release` workflow decides
+whether to prepare a beta release from the Conventional Commit history since
+the latest beta tag.
 
-- A completed Typora-parity feature set.
-- A major editor behavior fix.
-- A major architecture, parser, renderer, theme, or local-file milestone.
-- A repository history rewrite or release-process change that materially affects
-  consumers or contributors.
+Automatic release rules:
 
-Do not create a release for tiny documentation-only edits unless they are part
-of a milestone.
+- `feat` creates the next beta minor, for example `v0.7-beta.2` to
+  `v0.8-beta.1`.
+- `fix` and `perf` create the next beta patch, for example `v0.7-beta.2` to
+  `v0.7-beta.3`.
+- A `!` marker or `BREAKING CHANGE:` footer creates the next beta major, for
+  example `v0.7-beta.2` to `v1.0-beta.1`.
+- `docs`, `test`, `ci`, `chore`, `build`, `style`, and `refactor` do not
+  publish by themselves.
+- Release preparation commits such as `chore(release): prepare v0.8-beta.1` are
+  ignored by the auto-release decision so the workflow cannot loop forever.
+
+Manual production releases remain owner-gated. Production tags must only be used
+after the project owner explicitly decides the package is production-ready.
 
 ## Automated Release Steps
 
-The preferred release path is the `Release` GitHub Actions workflow.
+The preferred path is fully automated:
 
-1. Open `Actions -> Release -> Run workflow`.
-2. Enter the Git tag, for example `v0.8-beta.1`.
-3. Enter the npm package version, for example `0.8.0-beta.1`.
-4. Keep `prerelease` enabled for beta releases.
-5. Run the workflow.
+1. Merge a Conventional Commit pull request into `main`.
+2. Let the `Auto Release` workflow inspect commits since the latest beta tag.
+3. If the change is releasable, it dispatches the `Release` workflow with the
+   computed beta tag and npm package version.
 
-The workflow will:
+The release workflow will:
 
 - Update `package.json` and `pnpm-lock.yaml`.
 - Run `pnpm verify`.
@@ -67,8 +76,17 @@ The workflow will:
 - Create a GitHub Release.
 - Trigger npm publishing from the pushed `v*` tag.
 
-Normal pushes to `main` do not publish npm packages. npm publishing only runs
-when a `v*` tag is pushed.
+Documentation-only, test-only, CI-only, and maintenance-only pushes to `main`
+do not publish npm packages. npm publishing only runs when a `v*` tag is pushed
+after a release pull request has merged.
+
+The `Release` workflow can still be run manually as a fallback:
+
+1. Open `Actions -> Release -> Run workflow`.
+2. Enter the Git tag, for example `v0.8-beta.1`.
+3. Enter the npm package version, for example `0.8.0-beta.1`.
+4. Keep `prerelease` enabled for beta releases.
+5. Run the workflow.
 
 The automated release path requires these repository secrets:
 

@@ -7,7 +7,7 @@ import {
   toggleAppearance,
 } from "../website/appearance.ts";
 import { mountNav } from "../website/components/nav.ts";
-import { setLocale } from "../website/i18n.ts";
+import { getLocale, setLocale, toggleLocale } from "../website/i18n.ts";
 
 describe("built-in appearance themes", () => {
   test("applies, persists, and toggles the document appearance", () => {
@@ -66,5 +66,13 @@ describe("built-in appearance themes", () => {
       cleanup();
       localStorage.clear();
     }
+  });
+
+  test("toggles between supported interface locales", () => {
+    setLocale("en");
+    toggleLocale();
+    expect(getLocale()).toBe("zh");
+    toggleLocale();
+    expect(getLocale()).toBe("en");
   });
 });

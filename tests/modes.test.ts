@@ -116,7 +116,7 @@ describe("editor modes", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     const markdown = [
-      "# typora-web 中文演示",
+      "# Typora-Web 中文演示",
       "",
       "- [x] 使用 `F8` 切换**专注模式**，使用 `F9` 切换**打字机模式**。",
     ].join("\n");

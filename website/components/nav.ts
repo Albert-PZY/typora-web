@@ -19,7 +19,7 @@ export function mountNav(host: HTMLElement, current: string): () => void {
   const nav = document.createElement("nav");
   nav.className = "site-nav";
   nav.innerHTML = `
-    <a class="brand" href="#/"><img src="favicon.svg" alt="" aria-hidden="true" />typora-web</a>
+    <a class="brand" href="#/"><img src="favicon.svg" alt="" aria-hidden="true" />Typora-Web</a>
     <div class="nav-links">
       <a href="#/specs" data-route="/specs" data-i18n="nav.specs"></a>
       <div class="editor-nav-group">
