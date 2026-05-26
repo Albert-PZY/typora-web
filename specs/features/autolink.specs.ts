@@ -60,6 +60,18 @@ export const autolinkSpecs: FeatureSpecs = {
       ],
     },
     {
+      id: "bare-url-cjk-punctuation-boundary",
+      label: "bare URL stops before CJK punctuation and keeps following text plain",
+      seed: "裸 URL https://spec.commonmark.org/0.31.2/，以及邮箱 <hello@example.com>。",
+      events: [],
+      checkpoints: [
+        {
+          at: 0,
+          expect: "裸 URL <a:https://spec.commonmark.org/0.31.2/>https://spec.commonmark.org/0.31.2/</a>，以及邮箱 <a:mailto:hello@example.com>hello@example.com</a>。|",
+        },
+      ],
+    },
+    {
       id: "non-url-not-touched",
       label: "<not a url!> — no scheme/email or HTML shape, stays plain text",
       seed: "<not a url!> ",

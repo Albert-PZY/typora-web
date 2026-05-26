@@ -57,6 +57,12 @@ describe("CommonMark HTML blocks", () => {
     expect(widgetsCss).toMatch(
       /\.ProseMirror html-block \.html-block-preview \{\s+display: flow-root;\s+margin: 0;\s+padding: 0;\s+\}/,
     );
+    expect(widgetsCss).toContain(
+      ".ProseMirror html-block.html-source-open .html-block-source { margin-bottom: 10px; }",
+    );
+    expect(widgetsCss).not.toContain(
+      ".ProseMirror html-block.html-source-open .html-block-preview { display: none; }",
+    );
     expect(widgetsCss).not.toContain("min-height: 4.5em;");
     expect(widgetsCss).not.toContain("margin: 8px 0 0;");
     expect(widgetsCss).not.toContain("padding: 10px 12px;");
@@ -144,9 +150,11 @@ describe("CommonMark HTML blocks", () => {
 
       expect(block.classList.contains("html-source-open")).toBe(true);
       expect(source?.hidden).toBe(false);
+      expect(source?.nextElementSibling).toBe(block.querySelector(".html-block-preview"));
       expect(source?.querySelector(".cm-editor.typora-web-html-source")).not.toBeNull();
       expect(source?.textContent).toContain("<details>");
       expect(source?.querySelector("details")).toBeNull();
+      expect(block.querySelector(".html-block-preview strong")?.textContent).toBe("safe");
     } finally {
       cleanup();
     }
@@ -218,6 +226,45 @@ describe("CommonMark HTML blocks", () => {
       expect(block.querySelector(".html-block-preview strong")?.textContent).toBe("fresh");
       expect(htmlSourceEditor(block).state.doc.toString()).toBe(
         '<section><strong>fresh</strong></section>',
+      );
+    } finally {
+      cleanup();
+    }
+  });
+
+  test("HTML image source edits keep a live preview with updated dimensions", () => {
+    const { block, view, cleanup } = mountHtmlBlock(
+      '<img src="favicon.svg" alt="Typora-Web logo" width="180" />',
+    );
+
+    try {
+      const preview = block.querySelector<HTMLElement>(".html-block-preview");
+      preview?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+
+      const source = block.querySelector<HTMLElement>("div.html-block-source");
+      expect(source?.hidden).toBe(false);
+      expect(source?.nextElementSibling).toBe(preview);
+      expect(preview?.querySelector("img")?.getAttribute("width")).toBe("180");
+
+      const editorView = htmlSourceEditor(block);
+      const current = editorView.state.doc.toString();
+      editorView.dispatch({
+        changes: {
+          from: 0,
+          to: current.length,
+          insert: '<img src="favicon.svg" alt="Typora-Web logo" width="96" />',
+        },
+      });
+
+      const image = preview?.querySelector("img");
+      expect(image?.getAttribute("src")).toBe("favicon.svg");
+      expect(image?.getAttribute("alt")).toBe("Typora-Web logo");
+      expect(image?.getAttribute("width")).toBe("96");
+      expect(block.dataset.raw).toBe(
+        '<img src="favicon.svg" alt="Typora-Web logo" width="96" />',
+      );
+      expect(serialize(view.state.doc)).toBe(
+        '<img src="favicon.svg" alt="Typora-Web logo" width="96" />',
       );
     } finally {
       cleanup();

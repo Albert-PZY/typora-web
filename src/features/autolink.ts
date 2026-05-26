@@ -21,7 +21,8 @@ const URI_PART = "[a-zA-Z][a-zA-Z0-9+.-]*:[^\\s<>]+";
 const EMAIL_PART =
   "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}";
 const AUTOLINK_RE = new RegExp(`<((?:${URI_PART})|(?:${EMAIL_PART}))>`, "g");
-const BARE_URL_RE = /\bhttps?:\/\/[^\s<>\]]+/g;
+const BARE_URL_RE =
+  /\bhttps?:\/\/[^\s<>\]\u3000-\u303F\uFF01-\uFF0F\uFF1A-\uFF20\uFF3B-\uFF40\uFF5B-\uFF65]+/g;
 
 function rangeConsumed(consumed: Uint8Array, from: number, to: number): boolean {
   for (let i = from; i < to; i++) if (consumed[i]) return true;
