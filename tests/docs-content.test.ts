@@ -1,13 +1,16 @@
 import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
 
+import manualReleaseWorkflow from "../.github/workflows/release.yml?raw";
 import contributing from "../CONTRIBUTING.md?raw";
 import readme from "../README.md?raw";
 import readmeZh from "../README_zh-CN.md?raw";
 import syntaxSurvey from "../docs/typora-syntax-survey.md?raw";
 
+const normalizeLineEndings = (value: string) => value.replace(/\r\n?/g, "\n");
+
 describe("project documentation language order", () => {
   test("README is English by default and links to the Chinese guide", () => {
-    expect(readme.startsWith("[中文](README_zh-CN.md)\n\n# Typora-Web\n")).toBe(true);
+    expect(normalizeLineEndings(readme).startsWith("[中文](README_zh-CN.md)\n\n# Typora-Web\n")).toBe(true);
     expect(readme).toContain("## Technical Choices");
     expect(readme).toContain("## Install");
     expect(readme).toContain("## Controller API");
@@ -21,7 +24,7 @@ describe("project documentation language order", () => {
   });
 
   test("Chinese README links back to the English guide", () => {
-    expect(readmeZh.startsWith("[English](README.md)\n\n# Typora-Web\n")).toBe(true);
+    expect(normalizeLineEndings(readmeZh).startsWith("[English](README.md)\n\n# Typora-Web\n")).toBe(true);
     expect(readmeZh).toContain("## 技术选型");
     expect(readmeZh).toContain("## 安装");
     expect(readmeZh).toContain("## 控制器 API");
@@ -58,5 +61,11 @@ describe("project documentation language order", () => {
     expect(syntaxSurvey).not.toContain(
       "| Bare URL autolinks | Backlog |",
     );
+  });
+
+  test("manual release notes come from CHANGELOG instead of generated notes", () => {
+    expect(manualReleaseWorkflow).toContain("CHANGELOG.md");
+    expect(manualReleaseWorkflow).toContain("--notes-file release-notes.md");
+    expect(manualReleaseWorkflow).not.toContain("--generate-notes");
   });
 });

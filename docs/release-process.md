@@ -48,6 +48,9 @@ The release automation will:
 - Create a GitHub Release marked as the latest release.
 - Move `vX` and `vX.Y` compatibility tags to the release commit.
 - Dispatch npm publishing for the stable release tag.
+- Keep release notes focused on what was added or changed, with PR numbers when
+  useful. Release notes must not include GitHub's generated `by @user` wording
+  or a `New Contributors` section unless the owner explicitly asks for it.
 
 Documentation-only, test-only, CI-only, and maintenance-only pushes to `main`
 do not publish npm packages. npm publishing only runs after a stable `vX.Y.Z`
@@ -59,7 +62,8 @@ The automated release path requires these repository secrets:
 
 - `RELEASE_TOKEN`: a GitHub token allowed to create release pull requests,
   create tags, create releases, and dispatch workflows.
-- `NPM_TOKEN`: an npm token used by the npm publish workflow.
+- `NPM_TOKEN`: an npm token used by the npm publish workflow. The token must
+  belong to an npm owner or maintainer of the package name in `package.json`.
 
 ## Manual Release Fallback
 
@@ -92,13 +96,14 @@ Use these steps only if Release Please is unavailable.
    git push origin v0.8.0
    ```
 
-6. Create a stable GitHub Release:
+6. Create a stable GitHub Release with notes from `CHANGELOG.md` or an explicit
+   notes file:
 
    ```sh
    gh release create v0.8.0 \
      --repo Albert-PZY/typora-web \
      --title "v0.8.0" \
-     --generate-notes \
+     --notes-file release-notes.md \
      --latest
    ```
 
@@ -109,7 +114,8 @@ Use these steps only if Release Please is unavailable.
    ```
 
 The `Manual Release` workflow can also create a stable release when the package
-version already matches the requested tag:
+version already matches the requested tag and `CHANGELOG.md` contains a section
+for that version:
 
 ```text
 Actions -> Manual Release -> Run workflow -> tag=v0.8.0

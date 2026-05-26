@@ -94,14 +94,20 @@ GitHub Release and tag, then dispatches `Publish npm` from that tag. `Publish
 npm` also supports tag-push and manual-dispatch fallbacks and skips versions
 that are already published.
 
+Release notes must describe what was added or changed and may include PR
+numbers for traceability. Do not publish notes that contain GitHub's generated
+`by @user` wording or an automatic `New Contributors` section unless the owner
+explicitly asks for that wording.
+
 ## Manual Fallback
 
 Use manual release only when automation is unavailable:
 
 1. Confirm `package.json` already matches the intended stable version.
-2. Run the `Manual Release` workflow from GitHub Actions.
-3. Provide a stable tag such as `v0.8.0`.
-4. Let the workflow create the GitHub Release and dispatch npm publishing.
+2. Confirm `CHANGELOG.md` contains notes for that version.
+3. Run the `Manual Release` workflow from GitHub Actions.
+4. Provide a stable tag such as `v0.8.0`.
+5. Let the workflow create the GitHub Release and dispatch npm publishing.
 
 ## Failure Handling
 
@@ -110,5 +116,7 @@ Use manual release only when automation is unavailable:
 - If Release Please calculates an unexpected version, cancel the release pull
   request before merge and fix the release rules in a separate pull request.
 - If npm publishing fails after a tag exists, fix the publish workflow or npm
-  token and re-run the failed `Publish npm` job. Do not create a replacement tag
-  unless the owner approves it.
+  token and re-run the failed `Publish npm` job. If npm returns `403` for the
+  package name, either obtain npm owner/maintainer permission for that package
+  or change to a package name controlled by the project owner. Do not create a
+  replacement tag unless the owner approves it.
