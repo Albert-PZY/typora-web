@@ -49,7 +49,7 @@ class HtmlBlockView implements NodeView {
     this.preview.addEventListener("click", this.onPreviewClick);
     this.source.addEventListener("mousedown", this.onSourceMouseDown);
     document.addEventListener("mousedown", this.onDocumentMouseDown);
-    this.dom.append(this.preview, this.source);
+    this.dom.append(this.source, this.preview);
     this.sourceEditor = createEmbeddedCodeMirrorEditor({
       parent: this.source,
       doc: rawHtml(node),
