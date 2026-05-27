@@ -135,7 +135,6 @@
   --md-alert-color: #9a6700;
   --md-alert-bg: rgba(154, 103, 0, 0.1);
 }
-.ProseMirror blockquote.md-alert-caution,
 .ProseMirror blockquote.md-alert-danger {
   --md-alert-color: #cf222e;
   --md-alert-bg: rgba(207, 34, 46, 0.08);
@@ -237,7 +236,6 @@
   --md-alert-color: #d4a72c;
   --md-alert-bg: rgba(212, 167, 44, 0.11);
 }
-:root[data-appearance="dark"] .ProseMirror blockquote.md-alert-caution,
 :root[data-appearance="dark"] .ProseMirror blockquote.md-alert-danger {
   --md-alert-color: #ff7b72;
   --md-alert-bg: rgba(255, 123, 114, 0.1);

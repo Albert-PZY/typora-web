@@ -34,7 +34,6 @@ describe("callouts", () => {
     ["IMPORTANT", "important"],
     ["WARNING", "warning"],
     ["DANGER", "danger"],
-    ["CAUTION", "caution"],
   ])("parses %s marker into blockquote attrs", (source, kind) => {
     const doc = parse(`> [!${source}]\n> body`);
     const bq = doc.child(0);
@@ -42,6 +41,19 @@ describe("callouts", () => {
     expect(bq.attrs.alert).toBe(kind);
     expect(bq.attrs.alertSource).toBe(source);
     expect(bq.textContent).toBe("body");
+  });
+
+  test("rejects CAUTION as an unsupported callout marker", () => {
+    expect(normalizeCalloutKind("CAUTION")).toBeNull();
+    expect(calloutAttrsFromSource("caution")).toBeNull();
+
+    const doc = parse("> [!CAUTION]\n> body");
+    const bq = doc.child(0);
+
+    expect(bq.attrs.alert).toBeNull();
+    expect(bq.attrs.alertSource).toBeNull();
+    expect(bq.textContent).toBe("[!CAUTION]\nbody");
+    expect(serialize(doc)).toBe("> \\[!CAUTION\\]\n> body");
   });
 
   test("serializes callout marker before blockquote content", () => {
@@ -90,6 +102,7 @@ describe("callouts", () => {
     host.innerHTML = [
       '<blockquote class="markdown-alert-warning"><p>warning</p></blockquote>',
       '<blockquote class="md-alert-text-danger"><p>danger</p></blockquote>',
+      '<blockquote class="markdown-alert-caution"><p>caution</p></blockquote>',
       '<blockquote class="plain"><p>plain</p></blockquote>',
     ].join("");
     const blocks = Array.from(host.querySelectorAll<HTMLElement>("blockquote"));
@@ -103,6 +116,7 @@ describe("callouts", () => {
       alertSource: "DANGER",
     });
     expect(getCalloutAttrsFromElement(blocks[2]!)).toBeNull();
+    expect(getCalloutAttrsFromElement(blocks[3]!)).toBeNull();
   });
 
   test("callout marker folding keeps inline content after the marker line", () => {

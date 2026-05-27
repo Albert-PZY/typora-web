@@ -6,7 +6,6 @@ export type CalloutKind =
   | "tip"
   | "important"
   | "warning"
-  | "caution"
   | "danger";
 
 export type CalloutAttrs = {
@@ -15,9 +14,9 @@ export type CalloutAttrs = {
 };
 
 const CALLOUT_MARKER_RE =
-  /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|DANGER)\][ \t]*(?:\n|$)/i;
+  /^\[!(NOTE|TIP|IMPORTANT|WARNING|DANGER)\][ \t]*(?:\n|$)/i;
 const CALLOUT_MARKER_LINE_RE =
-  /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|DANGER)\][ \t]*$/i;
+  /^\[!(NOTE|TIP|IMPORTANT|WARNING|DANGER)\][ \t]*$/i;
 
 export function normalizeCalloutKind(value: string | null | undefined): CalloutKind | null {
   switch ((value ?? "").toLowerCase()) {
@@ -29,8 +28,6 @@ export function normalizeCalloutKind(value: string | null | undefined): CalloutK
       return "important";
     case "warning":
       return "warning";
-    case "caution":
-      return "caution";
     case "danger":
       return "danger";
     default:
@@ -54,7 +51,7 @@ export function getCalloutAttrsFromElement(el: HTMLElement): CalloutAttrs | null
   if (fromData) return fromData;
 
   for (const cls of Array.from(el.classList)) {
-    const match = /^(?:md-alert|md-alert-text|markdown-alert)-(note|tip|important|warning|caution|danger)$/i.exec(
+    const match = /^(?:md-alert|md-alert-text|markdown-alert)-(note|tip|important|warning|danger)$/i.exec(
       cls,
     );
     if (!match) continue;

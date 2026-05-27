@@ -141,7 +141,6 @@
   --md-alert-color: #9a6700;
   --md-alert-bg: rgba(154, 103, 0, 0.1);
 }
-.ProseMirror blockquote.md-alert-caution,
 .ProseMirror blockquote.md-alert-danger {
   --md-alert-color: #cf222e;
   --md-alert-bg: rgba(207, 34, 46, 0.1);

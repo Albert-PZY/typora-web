@@ -14,7 +14,7 @@ export const calloutSpecs: FeatureSpecs = {
     },
     {
       id: "all-supported-kinds",
-      label: "GitHub alert kinds and danger alias round-trip as callouts",
+      label: "Supported GitHub alert kinds round-trip as callouts",
       seed: [
         "> [!NOTE]\n> note",
         "",
@@ -25,8 +25,6 @@ export const calloutSpecs: FeatureSpecs = {
         "> [!WARNING]\n> warning",
         "",
         "> [!DANGER]\n> danger",
-        "",
-        "> [!CAUTION]\n> caution",
       ].join("\n"),
       events: [],
       checkpoints: [
@@ -37,8 +35,7 @@ export const calloutSpecs: FeatureSpecs = {
             "<callout:TIP>tip</callout>",
             "<callout:IMPORTANT>important</callout>",
             "<callout:WARNING>warning</callout>",
-            "<callout:DANGER>danger</callout>",
-            "<callout:CAUTION>caution|</callout>",
+            "<callout:DANGER>danger|</callout>",
           ].join("\n"),
         },
       ],
