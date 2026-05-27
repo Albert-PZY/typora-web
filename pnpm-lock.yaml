@@ -29,6 +29,9 @@ importers:
       '@codemirror/view':
         specifier: ^6.43.0
         version: 6.43.0
+      '@lezer/highlight':
+        specifier: 1.2.3
+        version: 1.2.3
       dompurify:
         specifier: ^3.4.3
         version: 3.4.3

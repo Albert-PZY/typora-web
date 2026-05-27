@@ -1,5 +1,6 @@
-import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
+import { readFileSync } from "node:fs";
 
+import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
 import { createEditor } from "../src/lib.ts";
 import { homeRoute } from "../website/routes/home.ts";
 
@@ -32,5 +33,14 @@ describe("removed custom theme support", () => {
     } finally {
       cleanup();
     }
+  });
+
+  test("dark Typora theme gives code blocks a distinct panel background", () => {
+    const typoraThemeCss = readFileSync("src/styles/theme-typora.css", "utf8");
+
+    expect(typoraThemeCss).toContain(':root[data-appearance="dark"] .ProseMirror pre');
+    expect(typoraThemeCss).toContain("background: #34373b;");
+    expect(typoraThemeCss).toContain("border-color: #474b51;");
+    expect(typoraThemeCss).toContain("box-shadow: 0 1px 0 rgba(255, 255, 255, 0.035) inset;");
   });
 });
