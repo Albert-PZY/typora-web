@@ -11,7 +11,7 @@ import {
 } from "@codemirror/commands";
 import {
   bracketMatching,
-  defaultHighlightStyle,
+  HighlightStyle,
   indentOnInput,
   LanguageDescription,
   type LanguageSupport,
@@ -19,6 +19,7 @@ import {
 } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
 import { markdown } from "@codemirror/lang-markdown";
+import { tags } from "@lezer/highlight";
 import {
   EditorView as CodeMirrorView,
   keymap,
@@ -66,6 +67,19 @@ const lezerDescription = LanguageDescription.of({
 const codeMirrorLanguages = languages.some((language) => language.name === "Lezer")
   ? languages
   : [...languages, lezerDescription];
+
+const typoraWebHighlightStyle = HighlightStyle.define([
+  { tag: tags.comment, color: "var(--tw-code-comment)" },
+  { tag: [tags.keyword, tags.operatorKeyword, tags.modifier], color: "var(--tw-code-keyword)" },
+  { tag: [tags.string, tags.character, tags.attributeValue], color: "var(--tw-code-string)" },
+  { tag: [tags.number, tags.bool, tags.null, tags.atom], color: "var(--tw-code-literal)" },
+  { tag: [tags.typeName, tags.className, tags.namespace], color: "var(--tw-code-type)" },
+  { tag: [tags.function(tags.variableName), tags.function(tags.propertyName)], color: "var(--tw-code-function)" },
+  { tag: [tags.variableName, tags.propertyName, tags.attributeName], color: "var(--tw-code-name)" },
+  { tag: [tags.operator, tags.punctuation, tags.bracket, tags.separator], color: "var(--tw-code-punctuation)" },
+  { tag: [tags.meta, tags.annotation], color: "var(--tw-code-meta)" },
+  { tag: tags.invalid, color: "var(--tw-code-invalid)" },
+]);
 
 export const CODE_LANGUAGE_OPTIONS: readonly CodeLanguageOption[] = codeMirrorLanguages
   .map((language) => ({
@@ -129,7 +143,7 @@ function commonExtensions(
     CodeMirrorState.tabSize.of(2),
     indentOnInput(),
     bracketMatching(),
-    syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+    syntaxHighlighting(typoraWebHighlightStyle, { fallback: true }),
     CodeMirrorView.lineWrapping,
     languageCompartment.of([]),
     CodeMirrorView.updateListener.of((update) => {
@@ -137,9 +151,31 @@ function commonExtensions(
     }),
     CodeMirrorView.theme({
       "&": {
+        "--tw-code-comment": "#77736c",
+        "--tw-code-keyword": "#7b4f9d",
+        "--tw-code-string": "#8a5a28",
+        "--tw-code-literal": "#6c6f1f",
+        "--tw-code-type": "#0f766e",
+        "--tw-code-function": "#2468a2",
+        "--tw-code-name": "inherit",
+        "--tw-code-punctuation": "#6f6a64",
+        "--tw-code-meta": "#77736c",
+        "--tw-code-invalid": "#b42318",
         backgroundColor: "transparent",
         color: "inherit",
         font: "inherit",
+      },
+      ":root[data-appearance=\"dark\"] &": {
+        "--tw-code-comment": "#9a9690",
+        "--tw-code-keyword": "#c9a7e8",
+        "--tw-code-string": "#e5aa7a",
+        "--tw-code-literal": "#c9c277",
+        "--tw-code-type": "#8bc8bd",
+        "--tw-code-function": "#9fbee8",
+        "--tw-code-name": "inherit",
+        "--tw-code-punctuation": "#c3bdb4",
+        "--tw-code-meta": "#a8a29a",
+        "--tw-code-invalid": "#ff8f86",
       },
       ".cm-scroller": {
         fontFamily: "inherit",

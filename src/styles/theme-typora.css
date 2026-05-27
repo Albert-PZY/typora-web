@@ -208,8 +208,9 @@
 }
 :root[data-appearance="dark"] .ProseMirror pre {
   color: #e4ded4;
-  background: #202225;
-  border-color: #34373c;
+  background: #34373b;
+  border-color: #474b51;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.035) inset;
 }
 :root[data-appearance="dark"] .ProseMirror blockquote {
   color: #aaa399;

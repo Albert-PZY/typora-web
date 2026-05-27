@@ -38,6 +38,15 @@ describe("CodeMirror 6 code editing and highlighting", () => {
     expect(support?.language.name).toBe("typescript");
   });
 
+  test("uses the Typora-Web code highlight palette instead of CodeMirror defaults", () => {
+    const highlighterSource = readFileSync("src/code-highlighter.ts", "utf8");
+
+    expect(highlighterSource).toContain("const typoraWebHighlightStyle = HighlightStyle.define");
+    expect(highlighterSource).toContain("syntaxHighlighting(typoraWebHighlightStyle");
+    expect(highlighterSource).toContain("--tw-code-keyword");
+    expect(highlighterSource).not.toContain("defaultHighlightStyle");
+  });
+
   test("mounts CodeMirror 6 inside editable fenced code blocks", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
@@ -172,6 +181,26 @@ describe("CodeMirror 6 code editing and highlighting", () => {
       expect(cmLine).not.toBeNull();
       expect(getComputedStyle(cmContent!).overflowWrap).toBe("anywhere");
       expect(getComputedStyle(cmLine!).wordBreak).toBe("break-word");
+    } finally {
+      editor.destroy();
+      host.remove();
+    }
+  });
+
+  test("code editors expose balanced theme variables", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const editor = createEditor(host, {
+      initialContent: '```ts\ntype EditorMode = "focus";\n```',
+    });
+
+    try {
+      await Promise.resolve();
+      const codeEditor = host.querySelector<HTMLElement>(".typora-web-code-editor .cm-editor");
+
+      expect(codeEditor).not.toBeNull();
+      expect(getComputedStyle(codeEditor!).getPropertyValue("--tw-code-keyword").trim()).toBe("#7b4f9d");
+      expect(getComputedStyle(codeEditor!).getPropertyValue("--tw-code-string").trim()).toBe("#8a5a28");
     } finally {
       editor.destroy();
       host.remove();

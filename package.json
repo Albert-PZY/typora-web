@@ -60,6 +60,7 @@
     "@codemirror/language-data": "^6.5.2",
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.43.0",
+    "@lezer/highlight": "1.2.3",
     "dompurify": "^3.4.3",
     "katex": "^0.16.46",
     "markdown-it": "^14.1.1",
