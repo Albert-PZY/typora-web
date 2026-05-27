@@ -33,7 +33,8 @@ describe("round-trip: blocks", () => {
   test("blockquote callout important", () => roundTripStable("> [!IMPORTANT]\n> body"));
   test("blockquote callout warning", () => roundTripStable("> [!WARNING]\n> body"));
   test("blockquote callout danger", () => roundTripStable("> [!DANGER]\n> body"));
-  test("blockquote callout caution", () => roundTripStable("> [!CAUTION]\n> body"));
+  test("blockquote unsupported caution marker", () =>
+    roundTripStable("> [!CAUTION]\n> body"));
   test("horizontal rule", () => roundTripStable("before\n\n---\n\nafter"));
   test("toc", () => roundTripStable("# Title\n\n[toc]\n\nbody"));
   test("toc uppercase normalizes", () =>

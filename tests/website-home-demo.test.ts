@@ -27,7 +27,7 @@ describe("website home demo content", () => {
       expect(markdown).toContain("> [!IMPORTANT]");
       expect(markdown).toContain("> [!WARNING]");
       expect(markdown).toContain("> [!DANGER]");
-      expect(markdown).toContain("> [!CAUTION]");
+      expect(markdown).not.toContain("> [!CAUTION]");
       expect(markdown).toContain("1. ");
       expect(markdown).toContain("|:---|:---:|---:|");
       expect(markdown).toContain("- [x]");

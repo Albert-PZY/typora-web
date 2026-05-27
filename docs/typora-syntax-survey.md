@@ -32,7 +32,7 @@ Legend: `Supported`, `Partial`, `Backlog`.
 | Mermaid fences | Supported | `mermaid` code fences render lazy diagram panels and preserve source. |
 | Other diagram engines | Backlog | Typora also supports Flowchart.js, sequence diagrams, Vega, and Vega-Lite; this project currently supports Mermaid only. |
 | Footnote definitions | Backlog | Not implemented. |
-| Callouts / GitHub alerts | Supported | `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `DANGER`, and `CAUTION` render as alert blockquotes and round-trip. |
+| Callouts / GitHub alerts | Supported | `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, and `DANGER` render as alert blockquotes and round-trip. |
 
 ## Inline Syntax
 

@@ -25,7 +25,7 @@ import type { FeatureSpec } from "./_types.ts";
 // So this feature does not contribute a keymap.
 
 const calloutInputRule = new InputRule(
-  /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|DANGER)\]$/i,
+  /^\[!(NOTE|TIP|IMPORTANT|WARNING|DANGER)\]$/i,
   (state, match, start, end) => {
     const attrs = calloutAttrsFromSource(match[1]);
     if (!attrs) return null;
