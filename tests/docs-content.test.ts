@@ -12,6 +12,9 @@ describe("project documentation language order", () => {
   test("README is English by default and links to the Chinese guide", () => {
     expect(normalizeLineEndings(readme).startsWith("[中文](README_zh-CN.md)\n\n# Typora-Web\n")).toBe(true);
     expect(readme).toContain("## Technical Choices");
+    expect(readme).toContain("## Attribution");
+    expect(readme).toContain("[Yuyz0112/typora-web][original-typora-web]");
+    expect(readme).toContain("Yanzhen Yu");
     expect(readme).toContain("## Install");
     expect(readme).toContain("## Controller API");
     expect(readme).toContain("## Markdown Support");
@@ -26,6 +29,9 @@ describe("project documentation language order", () => {
   test("Chinese README links back to the English guide", () => {
     expect(normalizeLineEndings(readmeZh).startsWith("[English](README.md)\n\n# Typora-Web\n")).toBe(true);
     expect(readmeZh).toContain("## 技术选型");
+    expect(readmeZh).toContain("## 来源与致谢");
+    expect(readmeZh).toContain("[Yuyz0112/typora-web][original-typora-web]");
+    expect(readmeZh).toContain("Yanzhen Yu");
     expect(readmeZh).toContain("## 安装");
     expect(readmeZh).toContain("## 控制器 API");
     expect(readmeZh).toContain("## Markdown 支持");

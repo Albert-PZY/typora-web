@@ -12,6 +12,14 @@ The project is built with TypeScript, ProseMirror, markdown-it, CodeMirror 6,
 KaTeX, Mermaid, DOMPurify, and native DOM APIs. It intentionally does not use
 Vue, React, Svelte, Angular, or any other frontend framework.
 
+## Attribution
+
+This project is based on the original [Yuyz0112/typora-web][original-typora-web]
+project by Yanzhen Yu. This repository continues that MIT-licensed foundation
+with additional syntax support, editing behavior, tests, documentation, and
+release automation. Respect and thanks go to the original author for the
+initial design and implementation.
+
 ## Links
 
 - [Live demo][demo]
@@ -255,3 +263,4 @@ split by logical change category.
 [conventional-commits]: https://www.conventionalcommits.org/en/v1.0.0/ "Conventional Commits 1.0.0"
 [demo]: https://albert-pzy.github.io/typora-web/ "Typora-Web live demo"
 [demo-specs]: https://albert-pzy.github.io/typora-web/#/specs "Typora-Web spec catalog"
+[original-typora-web]: https://github.com/Yuyz0112/typora-web "Original typora-web repository"
