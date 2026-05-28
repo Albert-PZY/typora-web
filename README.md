@@ -1,5 +1,9 @@
 [中文](README_zh-CN.md)
 
+<p align="center">
+  <img src="public/favicon.svg" alt="Typora-Web logo" width="96" />
+</p>
+
 # Typora-Web
 
 > A native, lightweight, high-performance Typora-style Markdown editor for the web.
@@ -201,6 +205,26 @@ Partial or intentionally pending areas:
 For the full compatibility matrix, see [docs/typora-syntax-survey.md](docs/typora-syntax-survey.md).
 
 ## Architecture
+
+```mermaid
+flowchart TD
+  User[Writer in the browser] --> Shell[Native website shell]
+  Shell --> API[createEditor controller]
+  API --> State[ProseMirror EditorState]
+  State --> Plugins[defaultPlugins feature stack]
+  Plugins --> Features[src/features]
+  Features --> Parser[markdown-it parser boundary]
+  Features --> Serializer[Markdown serializer]
+  Features --> Views[NodeViews and decorations]
+  Views --> CodeMirror[CodeMirror 6 code editing]
+  Views --> Mermaid[Mermaid SVG preview]
+  Views --> KaTeX[KaTeX math preview]
+  Parser --> State
+  State --> Serializer
+  Serializer --> Files[Local open and save workflows]
+  Specs[specs/features] --> Tests[Spec replay tests]
+  Tests --> Plugins
+```
 
 The codebase is organized around small feature modules:
 
