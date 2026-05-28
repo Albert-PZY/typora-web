@@ -1,6 +1,6 @@
 {
   "name": "typora-web",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "A Typora-style Markdown editor for the web.",
   "packageManager": "pnpm@11.1.0",
   "license": "MIT",
