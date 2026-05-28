@@ -1,6 +1,6 @@
 import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
 
-import { getHomeDemoMarkdown } from "../website/demo-content.ts";
+import { getHomeDemoMarkdown, MERMAID_DEMO_COUNT } from "../website/demo-content.ts";
 import { setLocale } from "../website/i18n.ts";
 import { homeRoute, shouldSwitchHomeDemoLocale } from "../website/routes/home.ts";
 
@@ -40,6 +40,61 @@ describe("website home demo content", () => {
     expect(zh).toContain("# Typora-Web 中文演示");
     expect(zh).toContain("专注模式");
     expect(zh).toContain("| 语法 |");
+  });
+
+  test("covers every supported Mermaid diagram family in the localized demo", () => {
+    const en = getHomeDemoMarkdown("en");
+    const zh = getHomeDemoMarkdown("zh");
+    const requiredMermaidStarts = [
+      "flowchart LR",
+      "graph TD",
+      "flowchart-elk TD",
+      "sequenceDiagram",
+      "classDiagram",
+      "classDiagram-v2",
+      "stateDiagram",
+      "stateDiagram-v2",
+      "erDiagram",
+      "journey",
+      "gantt",
+      "info",
+      "pie showData",
+      "quadrantChart",
+      "requirementDiagram",
+      "gitGraph",
+      "C4Context",
+      "mindmap",
+      "timeline",
+      "xychart-beta",
+      "sankey-beta",
+      "packet-beta",
+      "block-beta",
+      "kanban",
+      "architecture-beta",
+      "radar-beta",
+      "treeView-beta",
+      "eventmodeling",
+      "ishikawa-beta",
+      "venn-beta",
+      "treemap-beta",
+      "wardley-beta",
+    ];
+
+    for (const markdown of [en, zh]) {
+      expect(markdown.match(/```mermaid/g)?.length).toBe(MERMAID_DEMO_COUNT);
+      for (const start of requiredMermaidStarts) {
+        expect(markdown).toContain(start);
+      }
+    }
+
+    expect(en).toContain("A[Markdown source] --> B[Live preview]");
+    expect(en).toContain("U->>E: Type Markdown");
+    expect(en).toContain("title \"Render budget\"");
+    expect(en).toContain("set B[\"Preview\"]:35");
+    expect(zh).toContain("A[Markdown 源码] --> B[实时预览]");
+    expect(zh).toContain("U->>E: 输入 Markdown");
+    expect(zh).toContain("title \"渲染预算\"");
+    expect(zh).toContain("set B[\"预览\"]:35");
   });
 
   test("mounts the home editor with the current locale demo", () => {

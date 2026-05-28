@@ -19,7 +19,10 @@ import {
   type EmbeddedCodeMirrorEditor,
 } from "../code-highlighter.ts";
 import { createLatestTaskScheduler } from "../renderers/latest-task.ts";
-import { mermaidRenderer } from "../renderers/mermaid.ts";
+import {
+  getMermaidRenderAppearance,
+  mermaidRenderer,
+} from "../renderers/mermaid.ts";
 import type { FeatureSpec } from "./_types.ts";
 
 // Fenced code block feature.
@@ -65,6 +68,12 @@ import type { FeatureSpec } from "./_types.ts";
 
 const FENCE_RE = /^```(\w*)$/;
 const DIAGRAM_RENDER_DELAY_MS = 120;
+const DIAGRAM_RENDER_ROOT_MARGIN = "600px 0px";
+
+function canDeferDiagramRender(): boolean {
+  const userAgent = typeof navigator === "undefined" ? "" : navigator.userAgent;
+  return typeof IntersectionObserver === "function" && !/\bHappyDOM\b/i.test(userAgent);
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // lang-focus plugin state: which code_block (by pos) currently owns the
@@ -108,7 +117,11 @@ class CodeBlockView implements NodeView {
   private getPos: () => number | undefined;
   private cm: EmbeddedCodeMirrorEditor;
   private diagramScheduler = createLatestTaskScheduler(DIAGRAM_RENDER_DELAY_MS);
+  private diagramObserver: IntersectionObserver | null = null;
+  private appearanceObserver: MutationObserver | null = null;
   private renderedDiagramKey = "";
+  private pendingDiagramKey = "";
+  private pendingDiagramCode = "";
   private syncingFromProseMirror = false;
 
   constructor(
@@ -189,6 +202,8 @@ class CodeBlockView implements NodeView {
     document.addEventListener("mousedown", this.onDocumentMouseDown);
     window.addEventListener("resize", this.onViewportChange);
     window.addEventListener("scroll", this.onViewportChange, true);
+    window.addEventListener("typora-web:appearancechange", this.onAppearanceChange);
+    this.observeAppearanceChanges();
     // Apply initial decorations (PM doesn't call update() right after
     // construction with the starting deco set — do it manually).
     this.applyDecorations(decorations);
@@ -235,6 +250,7 @@ class CodeBlockView implements NodeView {
 
   private onDiagramClick = (): void => {
     if (!this.dom.classList.contains("has-diagram")) return;
+    this.startPendingDiagramRender();
     this.dom.classList.add("diagram-source-open");
     this.sourceFrameEl.classList.add("diagram-source-open");
     this.dom.classList.add("cb-active");
@@ -256,6 +272,23 @@ class CodeBlockView implements NodeView {
   private onViewportChange = (): void => {
     if (!this.menuEl.hidden) this.positionLanguageMenu();
   };
+
+  private onAppearanceChange = (): void => {
+    const pos = this.getPos();
+    if (pos == null) return;
+    const node = this.view.state.doc.nodeAt(pos);
+    if (!node || node.type.name !== "code_block") return;
+    this.renderDiagram(node);
+  };
+
+  private observeAppearanceChanges(): void {
+    if (typeof MutationObserver !== "function" || typeof document === "undefined") return;
+    this.appearanceObserver = new MutationObserver(this.onAppearanceChange);
+    this.appearanceObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-appearance"],
+    });
+  }
 
   private positionLanguageMenu(): void {
     const rect = this.inputEl.getBoundingClientRect();
@@ -408,42 +441,28 @@ class CodeBlockView implements NodeView {
     return true;
   }
 
-  private renderDiagram(node: PMNode): void {
-    const lang = String(node.attrs.lang ?? "").trim().toLowerCase();
-    if (lang !== "mermaid") {
-      this.diagramScheduler.cancel();
-      this.dom.classList.remove(
-        "has-diagram",
-        "diagram-success",
-        "diagram-error",
-        "diagram-source-open",
-      );
-      this.sourceFrameEl.classList.remove(
-        "has-diagram",
-        "diagram-success",
-        "diagram-error",
-        "diagram-source-open",
-      );
-      this.diagramEl.hidden = false;
-      this.diagramEl.replaceChildren();
-      this.diagramEl.removeAttribute("data-diagram-state");
-      this.renderedDiagramKey = "";
-      return;
-    }
-    const code = node.textContent;
-    const diagramKey = `${lang}\u0000${code}`;
-    if (diagramKey === this.renderedDiagramKey) return;
+  private stopDiagramObserver(): void {
+    this.diagramObserver?.disconnect();
+    this.diagramObserver = null;
+  }
+
+  private stopAppearanceObserver(): void {
+    this.appearanceObserver?.disconnect();
+    this.appearanceObserver = null;
+  }
+
+  private startPendingDiagramRender(): void {
+    if (!this.pendingDiagramKey) return;
+    const code = this.pendingDiagramCode;
+    const diagramKey = this.pendingDiagramKey;
+    this.stopDiagramObserver();
     this.renderedDiagramKey = diagramKey;
-    this.dom.classList.add("has-diagram");
-    this.sourceFrameEl.classList.add("has-diagram");
-    this.dom.classList.remove("diagram-success", "diagram-error");
-    this.sourceFrameEl.classList.remove("diagram-success", "diagram-error");
-    this.diagramEl.hidden = false;
-    this.diagramEl.dataset.diagramState = "loading";
-    this.diagramEl.textContent = "";
+    this.pendingDiagramCode = "";
+    this.pendingDiagramKey = "";
     this.diagramScheduler.schedule(
       () => mermaidRenderer.render(code),
       (result) => {
+        if (this.renderedDiagramKey !== diagramKey) return;
         if (result.state === "success") {
           this.dom.classList.add("diagram-success");
           this.dom.classList.remove("diagram-error");
@@ -463,6 +482,62 @@ class CodeBlockView implements NodeView {
         }
       },
     );
+  }
+
+  private observePendingDiagram(): void {
+    this.stopDiagramObserver();
+    if (!canDeferDiagramRender()) {
+      this.startPendingDiagramRender();
+      return;
+    }
+    this.diagramObserver = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        this.startPendingDiagramRender();
+      }
+    }, { rootMargin: DIAGRAM_RENDER_ROOT_MARGIN });
+    this.diagramObserver.observe(this.dom);
+  }
+
+  private renderDiagram(node: PMNode): void {
+    const lang = String(node.attrs.lang ?? "").trim().toLowerCase();
+    if (lang !== "mermaid") {
+      this.diagramScheduler.cancel();
+      this.stopDiagramObserver();
+      this.dom.classList.remove(
+        "has-diagram",
+        "diagram-success",
+        "diagram-error",
+        "diagram-source-open",
+      );
+      this.sourceFrameEl.classList.remove(
+        "has-diagram",
+        "diagram-success",
+        "diagram-error",
+        "diagram-source-open",
+      );
+      this.diagramEl.hidden = false;
+      this.diagramEl.replaceChildren();
+      this.diagramEl.removeAttribute("data-diagram-state");
+      this.renderedDiagramKey = "";
+      this.pendingDiagramKey = "";
+      this.pendingDiagramCode = "";
+      return;
+    }
+    const code = node.textContent;
+    const diagramKey = `${lang}\u0000${getMermaidRenderAppearance()}\u0000${code}`;
+    if (diagramKey === this.renderedDiagramKey || diagramKey === this.pendingDiagramKey) return;
+    this.diagramScheduler.cancel();
+    this.stopDiagramObserver();
+    this.pendingDiagramKey = diagramKey;
+    this.pendingDiagramCode = code;
+    this.dom.classList.add("has-diagram");
+    this.sourceFrameEl.classList.add("has-diagram");
+    this.dom.classList.remove("diagram-success", "diagram-error");
+    this.sourceFrameEl.classList.remove("diagram-success", "diagram-error");
+    this.diagramEl.hidden = false;
+    this.diagramEl.dataset.diagramState = "loading";
+    this.diagramEl.textContent = "";
+    this.observePendingDiagram();
   }
 
   // The input is non-PM DOM; PM should not process clicks/keys inside it.
@@ -499,6 +574,8 @@ class CodeBlockView implements NodeView {
 
   destroy(): void {
     this.diagramScheduler.cancel();
+    this.stopDiagramObserver();
+    this.stopAppearanceObserver();
     this.cm.destroy();
     this.codeMountEl.removeEventListener("focusin", this.onFocusIn);
     this.codeMountEl.removeEventListener("focusout", this.onFocusOut);
@@ -511,6 +588,7 @@ class CodeBlockView implements NodeView {
     document.removeEventListener("mousedown", this.onDocumentMouseDown);
     window.removeEventListener("resize", this.onViewportChange);
     window.removeEventListener("scroll", this.onViewportChange, true);
+    window.removeEventListener("typora-web:appearancechange", this.onAppearanceChange);
     this.menuEl.remove();
   }
 }

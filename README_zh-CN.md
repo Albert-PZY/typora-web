@@ -1,5 +1,9 @@
 [English](README.md)
 
+<p align="center">
+  <img src="public/favicon.svg" alt="Typora-Web 标志" width="96" />
+</p>
+
 # Typora-Web
 
 > 面向 Web 的原生、轻量、高性能 Typora 风格 Markdown 编辑器。
@@ -173,6 +177,26 @@ document.documentElement.style.colorScheme = "dark";
 完整兼容性矩阵见 [docs/typora-syntax-survey.md](docs/typora-syntax-survey.md)。
 
 ## 架构
+
+```mermaid
+flowchart TD
+  User[浏览器中的作者] --> Shell[原生网站外壳]
+  Shell --> API[createEditor 控制器]
+  API --> State[ProseMirror EditorState]
+  State --> Plugins[defaultPlugins 功能栈]
+  Plugins --> Features[src/features]
+  Features --> Parser[markdown-it 解析边界]
+  Features --> Serializer[Markdown 序列化器]
+  Features --> Views[NodeViews 和 decorations]
+  Views --> CodeMirror[CodeMirror 6 代码编辑]
+  Views --> Mermaid[Mermaid SVG 预览]
+  Views --> KaTeX[KaTeX 公式预览]
+  Parser --> State
+  State --> Serializer
+  Serializer --> Files[本地打开和保存流程]
+  Specs[specs/features] --> Tests[规格回放测试]
+  Tests --> Plugins
+```
 
 代码按小型功能模块组织：
 

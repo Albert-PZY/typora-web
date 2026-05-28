@@ -3,6 +3,608 @@ import type { Locale } from "./i18n.ts";
 const COMMONMARK_URL = "https://spec.commonmark.org/0.31.2/";
 const DEMO_IMAGE = "favicon.svg";
 
+type MermaidExample = {
+  title: Record<Locale, string>;
+  code: Record<Locale, string[]>;
+};
+
+const MERMAID_EXAMPLES: MermaidExample[] = [
+  {
+    title: { en: "Flowchart", zh: "流程图" },
+    code: {
+      en: [
+        "flowchart LR",
+        "  A[Markdown source] --> B[Live preview]",
+      ],
+      zh: [
+        "flowchart LR",
+        "  A[Markdown 源码] --> B[实时预览]",
+      ],
+    },
+  },
+  {
+    title: { en: "Graph", zh: "Graph 简写流程图" },
+    code: {
+      en: [
+        "graph TD",
+        "  A[Open file] --> B[Edit document]",
+      ],
+      zh: [
+        "graph TD",
+        "  A[打开文件] --> B[编辑文档]",
+      ],
+    },
+  },
+  {
+    title: { en: "Flowchart ELK", zh: "ELK 布局流程图" },
+    code: {
+      en: [
+        "flowchart-elk TD",
+        "  A[Source text] --> B[Rendered view]",
+      ],
+      zh: [
+        "flowchart-elk TD",
+        "  A[源码文本] --> B[渲染视图]",
+      ],
+    },
+  },
+  {
+    title: { en: "Sequence Diagram", zh: "时序图" },
+    code: {
+      en: [
+        "sequenceDiagram",
+        "  participant U as Writer",
+        "  participant E as Typora-Web",
+        "  U->>E: Type Markdown",
+        "  E-->>U: Update preview",
+      ],
+      zh: [
+        "sequenceDiagram",
+        "  participant U as 作者",
+        "  participant E as Typora-Web",
+        "  U->>E: 输入 Markdown",
+        "  E-->>U: 更新预览",
+      ],
+    },
+  },
+  {
+    title: { en: "Class Diagram", zh: "类图" },
+    code: {
+      en: [
+        "classDiagram",
+        "  class Editor",
+        "  Editor : +setMarkdown()",
+        "  Editor : +getMarkdown()",
+      ],
+      zh: [
+        "classDiagram",
+        "  class Editor",
+        "  Editor : +设置Markdown()",
+        "  Editor : +读取Markdown()",
+      ],
+    },
+  },
+  {
+    title: { en: "Class Diagram v2", zh: "类图 v2" },
+    code: {
+      en: [
+        "classDiagram-v2",
+        "  class Document",
+        "  Document : +serialize()",
+      ],
+      zh: [
+        "classDiagram-v2",
+        "  class Document",
+        "  Document : +序列化()",
+      ],
+    },
+  },
+  {
+    title: { en: "State Diagram", zh: "状态图" },
+    code: {
+      en: [
+        "stateDiagram",
+        "  [*] --> Draft",
+        "  Draft --> Saved",
+      ],
+      zh: [
+        "stateDiagram",
+        "  [*] --> 草稿",
+        "  草稿 --> 已保存",
+      ],
+    },
+  },
+  {
+    title: { en: "State Diagram v2", zh: "状态图 v2" },
+    code: {
+      en: [
+        "stateDiagram-v2",
+        "  [*] --> Editing",
+        "  Editing --> Preview",
+        "  Preview --> Editing",
+      ],
+      zh: [
+        "stateDiagram-v2",
+        "  [*] --> 编辑",
+        "  编辑 --> 预览",
+        "  预览 --> 编辑",
+      ],
+    },
+  },
+  {
+    title: { en: "Entity Relationship Diagram", zh: "实体关系图" },
+    code: {
+      en: [
+        "erDiagram",
+        "  DOCUMENT ||--o{ HEADING : contains",
+        "  DOCUMENT ||--o{ BLOCK : contains",
+      ],
+      zh: [
+        "erDiagram",
+        "  DOCUMENT ||--o{ HEADING : 包含",
+        "  DOCUMENT ||--o{ BLOCK : 包含",
+      ],
+    },
+  },
+  {
+    title: { en: "User Journey", zh: "用户旅程图" },
+    code: {
+      en: [
+        "journey",
+        "  title Editing flow",
+        "  section Draft",
+        "    Type content: 5: Writer",
+        "    Preview result: 4: Writer",
+      ],
+      zh: [
+        "journey",
+        "  title 编辑流程",
+        "  section 草稿",
+        "    输入内容: 5: 作者",
+        "    预览结果: 4: 作者",
+      ],
+    },
+  },
+  {
+    title: { en: "Gantt", zh: "甘特图" },
+    code: {
+      en: [
+        "gantt",
+        "  title Release plan",
+        "  dateFormat  YYYY-MM-DD",
+        "  section Build",
+        "  Implement :a1, 2026-01-01, 2d",
+        "  Verify :after a1, 1d",
+      ],
+      zh: [
+        "gantt",
+        "  title 发布计划",
+        "  dateFormat  YYYY-MM-DD",
+        "  section 构建",
+        "  实现 :a1, 2026-01-01, 2d",
+        "  验证 :after a1, 1d",
+      ],
+    },
+  },
+  {
+    title: { en: "Info", zh: "信息图" },
+    code: {
+      en: ["info"],
+      zh: ["info"],
+    },
+  },
+  {
+    title: { en: "Pie", zh: "饼图" },
+    code: {
+      en: [
+        "pie showData",
+        "  title Syntax coverage",
+        "  \"Blocks\" : 40",
+        "  \"Inline\" : 35",
+        "  \"Diagrams\" : 25",
+      ],
+      zh: [
+        "pie showData",
+        "  title 语法覆盖",
+        "  \"块级\" : 40",
+        "  \"行内\" : 35",
+        "  \"图表\" : 25",
+      ],
+    },
+  },
+  {
+    title: { en: "Quadrant Chart", zh: "四象限图" },
+    code: {
+      en: [
+        "quadrantChart",
+        "  title Feature map",
+        "  x-axis Low impact --> High impact",
+        "  y-axis Low effort --> High effort",
+        "  quadrant-1 Plan",
+        "  quadrant-2 Invest",
+        "  quadrant-3 Skip",
+        "  quadrant-4 Quick win",
+        "  Editor shell: [0.70, 0.35]",
+      ],
+      zh: [
+        "quadrantChart",
+        "  title 功能地图",
+        "  x-axis 低影响 --> 高影响",
+        "  y-axis 低成本 --> 高成本",
+        "  quadrant-1 规划",
+        "  quadrant-2 投入",
+        "  quadrant-3 跳过",
+        "  quadrant-4 快速完成",
+        "  编辑器外壳: [0.70, 0.35]",
+      ],
+    },
+  },
+  {
+    title: { en: "Requirement Diagram", zh: "需求图" },
+    code: {
+      en: [
+        "requirementDiagram",
+        "  requirement stable_roundtrip {",
+        "    id: R1",
+        "    text: Markdown round trip stays stable",
+        "    risk: low",
+        "    verifymethod: test",
+        "  }",
+      ],
+      zh: [
+        "requirementDiagram",
+        "  requirement stable_roundtrip {",
+        "    id: R1",
+        "    text: Markdown 往返保存保持稳定",
+        "    risk: low",
+        "    verifymethod: test",
+        "  }",
+      ],
+    },
+  },
+  {
+    title: { en: "Git Graph", zh: "Git 图" },
+    code: {
+      en: [
+        "gitGraph",
+        "  commit id: \"init\"",
+        "  branch feature",
+        "  checkout feature",
+        "  commit id: \"demo\"",
+        "  checkout main",
+        "  merge feature",
+      ],
+      zh: [
+        "gitGraph",
+        "  commit id: \"初始化\"",
+        "  branch feature",
+        "  checkout feature",
+        "  commit id: \"示例\"",
+        "  checkout main",
+        "  merge feature",
+      ],
+    },
+  },
+  {
+    title: { en: "C4 Context", zh: "C4 上下文图" },
+    code: {
+      en: [
+        "C4Context",
+        "  title Typora-Web context",
+        "  Person(writer, \"Writer\")",
+        "  System(editor, \"Typora-Web\")",
+        "  Rel(writer, editor, \"Writes Markdown\")",
+      ],
+      zh: [
+        "C4Context",
+        "  title Typora-Web 上下文",
+        "  Person(writer, \"作者\")",
+        "  System(editor, \"Typora-Web\")",
+        "  Rel(writer, editor, \"编写 Markdown\")",
+      ],
+    },
+  },
+  {
+    title: { en: "Mindmap", zh: "思维导图" },
+    code: {
+      en: [
+        "mindmap",
+        "  root((Typora-Web))",
+        "    Editing",
+        "    Preview",
+        "    Export",
+      ],
+      zh: [
+        "mindmap",
+        "  root((Typora-Web))",
+        "    编辑",
+        "    预览",
+        "    导出",
+      ],
+    },
+  },
+  {
+    title: { en: "Timeline", zh: "时间线" },
+    code: {
+      en: [
+        "timeline",
+        "  title Document lifecycle",
+        "  Draft : Write",
+        "  Review : Preview",
+        "  Publish : Save",
+      ],
+      zh: [
+        "timeline",
+        "  title 文档生命周期",
+        "  草稿 : 编写",
+        "  检查 : 预览",
+        "  发布 : 保存",
+      ],
+    },
+  },
+  {
+    title: { en: "XY Chart", zh: "XY 图" },
+    code: {
+      en: [
+        "xychart-beta",
+        "  title \"Render budget\"",
+        "  x-axis [Small, Medium, Large]",
+        "  y-axis \"ms\" 0 --> 100",
+        "  bar [20, 45, 70]",
+      ],
+      zh: [
+        "xychart-beta",
+        "  title \"渲染预算\"",
+        "  x-axis [Small, Medium, Large]",
+        "  y-axis \"毫秒\" 0 --> 100",
+        "  bar [20, 45, 70]",
+      ],
+    },
+  },
+  {
+    title: { en: "Sankey", zh: "桑基图" },
+    code: {
+      en: [
+        "sankey-beta",
+        "  Markdown,Parser,8",
+        "  Parser,Preview,6",
+        "  Parser,Serializer,2",
+      ],
+      zh: [
+        "sankey-beta",
+        "  Markdown,Parser,8",
+        "  Parser,Preview,6",
+        "  Parser,Serializer,2",
+      ],
+    },
+  },
+  {
+    title: { en: "Packet", zh: "数据包图" },
+    code: {
+      en: [
+        "packet-beta",
+        "  title Markdown packet",
+        "  0-15: \"Front matter\"",
+        "  16-31: \"Body\"",
+      ],
+      zh: [
+        "packet-beta",
+        "  title Markdown 数据包",
+        "  0-15: \"Front matter\"",
+        "  16-31: \"正文\"",
+      ],
+    },
+  },
+  {
+    title: { en: "Block Diagram", zh: "块图" },
+    code: {
+      en: [
+        "block-beta",
+        "  columns 3",
+        "  Source Parser Preview",
+        "  Source-->Parser",
+        "  Parser-->Preview",
+      ],
+      zh: [
+        "block-beta",
+        "  columns 3",
+        "  源码 解析器 预览",
+        "  源码-->解析器",
+        "  解析器-->预览",
+      ],
+    },
+  },
+  {
+    title: { en: "Kanban", zh: "看板" },
+    code: {
+      en: [
+        "kanban",
+        "  Backlog",
+        "    Markdown parity",
+        "  Doing",
+        "    Mermaid gallery",
+        "  Done",
+        "    Callouts",
+      ],
+      zh: [
+        "kanban",
+        "  待办",
+        "    Markdown 对齐",
+        "  进行中",
+        "    Mermaid 图集",
+        "  已完成",
+        "    提示框",
+      ],
+    },
+  },
+  {
+    title: { en: "Architecture", zh: "架构图" },
+    code: {
+      en: [
+        "architecture-beta",
+        "  group app(cloud)[\"Typora-Web\"]",
+        "  service ui(server)[\"Editor UI\"] in app",
+        "  service pm(database)[\"ProseMirror\"] in app",
+        "  ui:R -- L:pm",
+      ],
+      zh: [
+        "architecture-beta",
+        "  group app(cloud)[\"Typora-Web\"]",
+        "  service ui(server)[\"编辑器界面\"] in app",
+        "  service pm(database)[\"ProseMirror\"] in app",
+        "  ui:R -- L:pm",
+      ],
+    },
+  },
+  {
+    title: { en: "Radar", zh: "雷达图" },
+    code: {
+      en: [
+        "radar-beta",
+        "  axis Speed, Stability, UX",
+        "  curve Current{80, 90, 85}",
+      ],
+      zh: [
+        "radar-beta",
+        "  title \"能力雷达\"",
+        "  axis Speed, Stability, Experience",
+        "  curve Current{80, 90, 85}",
+      ],
+    },
+  },
+  {
+    title: { en: "Tree View", zh: "树视图" },
+    code: {
+      en: [
+        "treeView-beta",
+        "  \"docs\"",
+        "    \"README.md\"",
+        "    \"specs\"",
+        "      \"callouts.md\"",
+      ],
+      zh: [
+        "treeView-beta",
+        "  \"文档\"",
+        "    \"README.md\"",
+        "    \"规格\"",
+        "      \"提示框.md\"",
+      ],
+    },
+  },
+  {
+    title: { en: "Event Modeling", zh: "事件建模图" },
+    code: {
+      en: [
+        "eventmodeling",
+        "  tf 01 evt UserTyped",
+        "  tf 02 cmd RenderPreview",
+        "  tf 03 ui PreviewUpdated",
+      ],
+      zh: [
+        "eventmodeling",
+        "  tf 01 evt UserTyped",
+        "  tf 02 cmd RenderPreview",
+        "  tf 03 ui PreviewUpdated",
+      ],
+    },
+  },
+  {
+    title: { en: "Ishikawa", zh: "鱼骨图" },
+    code: {
+      en: [
+        "ishikawa-beta",
+        "  Rendering quality",
+        "    Parser",
+        "      Markdown tokens",
+        "    UI",
+        "      Preview state",
+      ],
+      zh: [
+        "ishikawa-beta",
+        "  渲染质量",
+        "    解析器",
+        "      Markdown 标记",
+        "    界面",
+        "      预览状态",
+      ],
+    },
+  },
+  {
+    title: { en: "Venn", zh: "韦恩图" },
+    code: {
+      en: [
+        "venn-beta",
+        "  title \"Feature overlap\"",
+        "  set A[\"Markdown\"]:40",
+        "  set B[\"Preview\"]:35",
+        "  union A,B[\"Shared\"]:20",
+      ],
+      zh: [
+        "venn-beta",
+        "  title \"功能重叠\"",
+        "  set A[\"Markdown\"]:40",
+        "  set B[\"预览\"]:35",
+        "  union A,B[\"共享\"]:20",
+      ],
+    },
+  },
+  {
+    title: { en: "Treemap", zh: "矩形树图" },
+    code: {
+      en: [
+        "treemap-beta",
+        "  \"Editor\"",
+        "    \"Markdown\": 40",
+        "    \"Preview\": 35",
+        "    \"Diagrams\": 25",
+      ],
+      zh: [
+        "treemap-beta",
+        "  \"编辑器\"",
+        "    \"Markdown\": 40",
+        "    \"预览\": 35",
+        "    \"图表\": 25",
+      ],
+    },
+  },
+  {
+    title: { en: "Wardley Map", zh: "Wardley 地图" },
+    code: {
+      en: [
+        "wardley-beta",
+        "  title Editor map",
+        "  anchor User [0.95, 0.65]",
+        "  component Markdown [0.80, 0.45]",
+        "  component Preview [0.65, 0.35]",
+        "  User->Markdown",
+        "  Markdown->Preview",
+      ],
+      zh: [
+        "wardley-beta",
+        "  title 编辑器地图",
+        "  anchor User [0.95, 0.65]",
+        "  component Markdown [0.80, 0.45]",
+        "  component Preview [0.65, 0.35]",
+        "  User->Markdown",
+        "  Markdown->Preview",
+      ],
+    },
+  },
+];
+
+export const MERMAID_DEMO_COUNT = MERMAID_EXAMPLES.length;
+
+function mermaidGallery(locale: Locale): string[] {
+  return MERMAID_EXAMPLES.flatMap((example) => [
+    `### ${example.title[locale]}`,
+    "",
+    "```mermaid",
+    ...example.code[locale],
+    "```",
+    "",
+  ]);
+}
+
 const EN_DEMO = [
   "---",
   "title: Typora-Web demo",
@@ -109,13 +711,9 @@ const EN_DEMO = [
   "\\int_{0}^{1} x^2\\,dx = \\frac{1}{3}",
   "$$",
   "",
-  "```mermaid",
-  "flowchart LR",
-  "  A[Markdown source] --> B[CommonMark parser]",
-  "  B --> C[ProseMirror document]",
-  "  C --> D[Typora-style preview]",
-  "  D --> E[Markdown serializer]",
-  "```",
+  "### Mermaid gallery",
+  "",
+  ...mermaidGallery("en"),
   "",
   "<details>",
   "<summary>Sanitized HTML preview</summary>",
@@ -237,13 +835,9 @@ const ZH_DEMO = [
   "\\int_{0}^{1} x^2\\,dx = \\frac{1}{3}",
   "$$",
   "",
-  "```mermaid",
-  "flowchart LR",
-  "  A[Markdown 源码] --> B[CommonMark 解析器]",
-  "  B --> C[ProseMirror 文档]",
-  "  C --> D[Typora 风格预览]",
-  "  D --> E[Markdown 序列化]",
-  "```",
+  "### Mermaid 图集",
+  "",
+  ...mermaidGallery("zh"),
   "",
   "<details>",
   "<summary>已消毒的 HTML 预览</summary>",

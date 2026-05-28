@@ -43,4 +43,16 @@ describe("removed custom theme support", () => {
     expect(typoraThemeCss).toContain("border-color: #474b51;");
     expect(typoraThemeCss).toContain("box-shadow: 0 1px 0 rgba(255, 255, 255, 0.035) inset;");
   });
+
+  test("dark editor chrome keeps Mermaid diagram text readable", () => {
+    const widgetsCss = readFileSync("src/styles/widgets.css", "utf8");
+
+    expect(widgetsCss).toContain(':root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg');
+    expect(widgetsCss).toContain(".diagram-panel svg .branch-label0");
+    expect(widgetsCss).toContain(".diagram-panel svg .packetLabel");
+    expect(widgetsCss).toContain(".diagram-panel svg .treeView-node-label");
+    expect(widgetsCss).toContain(".diagram-panel svg text.actor");
+    expect(widgetsCss).toContain('.diagram-panel svg .wardley-node-label[fill="#000"]');
+    expect(widgetsCss).toContain("fill: #ece7dd !important;");
+  });
 });

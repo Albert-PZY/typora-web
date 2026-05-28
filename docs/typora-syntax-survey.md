@@ -29,7 +29,7 @@ Legend: `Supported`, `Partial`, `Backlog`.
 | Reference link definitions | Partial | Live entry is supported, but markdown-it consumes definitions during parse. |
 | HTML blocks | Supported | CommonMark HTML block tokens render through DOMPurify and serialize from the original source. |
 | Math blocks `$$ ... $$` | Supported | KaTeX preview, editable source, serializer preservation, and invalid-TeX containment. |
-| Mermaid fences | Supported | `mermaid` code fences render lazy diagram panels and preserve source. |
+| Mermaid fences | Supported | `mermaid` code fences render lazy diagram panels, preserve source, and the localized home demo covers the diagram families exposed by `mermaid@11.15.0`. |
 | Other diagram engines | Backlog | Typora also supports Flowchart.js, sequence diagrams, Vega, and Vega-Lite; this project currently supports Mermaid only. |
 | Footnote definitions | Backlog | Not implemented. |
 | Callouts / GitHub alerts | Supported | `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, and `DANGER` render as alert blockquotes and round-trip. |
@@ -46,7 +46,7 @@ Legend: `Supported`, `Partial`, `Backlog`.
 | Links | Partial | Common inline, title, empty-text, and autolink cases work; some escaped-bracket and whitespace href cases remain. |
 | Reference-style links | Partial | Link resolves on parse; definition-block preservation is the remaining gap. |
 | Images | Supported | Inline image syntax is covered. |
-| Image size extensions | Backlog | Typora-style dimensions are not implemented. |
+| Image size extensions | Partial | HTML `<img>` width and height attributes are preserved and previewed; non-HTML Markdown image dimension variants remain backlog. |
 | Autolinks | Supported | Angle-bracket URLs and email autolinks are supported. |
 | Bare URL autolinks | Supported | Typora-style bare `http://` and `https://` URLs link without angle brackets; trailing sentence punctuation stays outside the link. |
 | Hard breaks and soft breaks | Supported | Both are covered by parser and serializer tests. |

@@ -682,6 +682,43 @@
 :root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel {
   background: rgba(232, 225, 214, 0.07);
 }
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg {
+  color: #ece7dd;
+}
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .nodeLabel,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .edgeLabel,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .markdown-node-label,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .section-root span {
+  color: #ece7dd !important;
+}
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .branch-label0,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .branch-label1,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .branch-label2,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .branch-label3,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .branch-label4,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .branch-label5,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .branch-label6,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .branch-label7,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .branch-label8,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .branch-label9,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .branch-label10,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .branch-label11,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .packetByte,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .packetLabel,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .packetTitle,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .treeView-node-label,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg text.actor,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .section-root text,
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .wardley-node-label[fill="#000"] {
+  fill: #ece7dd !important;
+}
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .treeView-node-line {
+  stroke: #aeb6c2 !important;
+}
+:root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel svg .packetBlock {
+  fill: #25272b !important;
+  stroke: #6e7681 !important;
+}
 :root[data-appearance="dark"] .ProseMirror .code-block-node .diagram-panel[data-diagram-state="loading"]::before {
   color: #8b8f95;
 }

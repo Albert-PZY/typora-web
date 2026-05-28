@@ -3,21 +3,24 @@ import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
 import { createEditor } from "../src/lib.ts";
 import {
   createMermaidRenderer,
+  getMermaidRenderAppearance,
   mermaidRenderer,
   normalizeMermaidSourceForRender,
 } from "../src/renderers/mermaid.ts";
 
 describe("mermaid renderer", () => {
-  test("adds render-only spaces around newlines adjacent to Mermaid symbols", () => {
+  test("adds render-only spaces only for split flowchart edge labels", () => {
     expect(normalizeMermaidSourceForRender("flowchart LR\nA-->\n|ok|B")).toBe(
       "flowchart LR\nA--> \n |ok|B",
     );
-    expect(normalizeMermaidSourceForRender("flowchart LR\n  A --> B")).toBe(
-      "flowchart LR\n  A --> B",
+    expect(normalizeMermaidSourceForRender(
+      "requirementDiagram\n  requirement stable {\n    id: R1\n  }",
+    )).toBe(
+      "requirementDiagram\n  requirement stable {\n    id: R1\n  }",
     );
   });
 
-  test("initializes Mermaid lazily with strict security", async () => {
+  test("initializes Mermaid lazily with strict security and light theme", async () => {
     const calls: unknown[] = [];
     const renderer = createMermaidRenderer(async () => ({
       initialize(config: unknown) {
@@ -37,7 +40,57 @@ describe("mermaid renderer", () => {
       startOnLoad: false,
       securityLevel: "strict",
       suppressErrorRendering: true,
+      theme: "default",
+      themeVariables: {},
     }]);
+  });
+
+  test("uses a dark Mermaid theme when the document appearance is dark", async () => {
+    const previousAppearance = document.documentElement.dataset.appearance;
+    document.documentElement.dataset.appearance = "dark";
+    const calls: unknown[] = [];
+    const renderer = createMermaidRenderer(async () => ({
+      initialize(config: unknown) {
+        calls.push(config);
+      },
+      async render(id: string, code: string) {
+        return { svg: `<svg data-id="${id}">${code}</svg>` };
+      },
+    }));
+
+    try {
+      expect(getMermaidRenderAppearance()).toBe("dark");
+      const result = await renderer.render("graph TD\nA-->B");
+
+      expect(result.state).toBe("success");
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({
+        startOnLoad: false,
+        securityLevel: "strict",
+        suppressErrorRendering: true,
+        theme: "base",
+        themeVariables: {
+          darkMode: true,
+          primaryTextColor: "#ece7dd",
+          actorTextColor: "#ece7dd",
+          lineColor: "#aeb6c2",
+          branchLabelColor: "#ece7dd",
+          packet: {
+            labelColor: "#ece7dd",
+            blockFillColor: "#25272b",
+          },
+          wardley: {
+            componentLabelColor: "#ece7dd",
+          },
+        },
+      });
+    } finally {
+      if (previousAppearance === undefined) {
+        delete document.documentElement.dataset.appearance;
+      } else {
+        document.documentElement.dataset.appearance = previousAppearance;
+      }
+    }
   });
 
   test("treats Mermaid-generated syntax error SVG as an error state", async () => {
@@ -171,6 +224,57 @@ describe("mermaid source visibility policy", () => {
       (mermaidRenderer as unknown as {
         render: typeof originalRender;
       }).render = originalRender;
+      editor.destroy();
+      host.remove();
+    }
+  });
+
+  test("rerenders visible Mermaid diagrams when the appearance changes", async () => {
+    const previousAppearance = document.documentElement.dataset.appearance;
+    document.documentElement.dataset.appearance = "light";
+    const originalRender = mermaidRenderer.render;
+    const renderedSources: string[] = [];
+    (mermaidRenderer as unknown as {
+      render: typeof originalRender;
+    }).render = async (code: string) => {
+      renderedSources.push(code);
+      return {
+        state: "success",
+        svg: `<svg data-call="${renderedSources.length}"><text>${code}</text></svg>`,
+      };
+    };
+
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const editor = createEditor(host, {
+      initialContent: "```mermaid\nflowchart LR\n  A --> B\n```",
+    });
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 180));
+
+      const panel = host.querySelector<HTMLElement>(".diagram-panel");
+      expect(renderedSources).toEqual(["flowchart LR\n  A --> B"]);
+      expect(panel?.querySelector("svg")?.getAttribute("data-call")).toBe("1");
+
+      document.documentElement.dataset.appearance = "dark";
+      window.dispatchEvent(new CustomEvent("typora-web:appearancechange"));
+      await new Promise((resolve) => setTimeout(resolve, 180));
+
+      expect(renderedSources).toEqual([
+        "flowchart LR\n  A --> B",
+        "flowchart LR\n  A --> B",
+      ]);
+      expect(panel?.querySelector("svg")?.getAttribute("data-call")).toBe("2");
+    } finally {
+      (mermaidRenderer as unknown as {
+        render: typeof originalRender;
+      }).render = originalRender;
+      if (previousAppearance === undefined) {
+        delete document.documentElement.dataset.appearance;
+      } else {
+        document.documentElement.dataset.appearance = previousAppearance;
+      }
       editor.destroy();
       host.remove();
     }

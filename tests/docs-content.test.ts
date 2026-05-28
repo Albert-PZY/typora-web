@@ -10,7 +10,13 @@ const normalizeLineEndings = (value: string) => value.replace(/\r\n?/g, "\n");
 
 describe("project documentation language order", () => {
   test("README is English by default and links to the Chinese guide", () => {
-    expect(normalizeLineEndings(readme).startsWith("[中文](README_zh-CN.md)\n\n# Typora-Web\n")).toBe(true);
+    expect(normalizeLineEndings(readme).startsWith(
+      "[中文](README_zh-CN.md)\n\n" +
+        "<p align=\"center\">\n" +
+        "  <img src=\"public/favicon.svg\" alt=\"Typora-Web logo\" width=\"96\" />\n" +
+        "</p>\n\n" +
+        "# Typora-Web\n",
+    )).toBe(true);
     expect(readme).toContain("## Technical Choices");
     expect(readme).toContain("## Attribution");
     expect(readme).toContain("[Yuyz0112/typora-web][original-typora-web]");
@@ -20,6 +26,9 @@ describe("project documentation language order", () => {
     expect(readme).toContain("## Markdown Support");
     expect(readme).toContain("## Architecture");
     expect(readme).toContain("## Development");
+    expect(readme).toContain("```mermaid\nflowchart TD");
+    expect(readme).toContain("Writer in the browser");
+    expect(readme).toContain("defaultPlugins feature stack");
     expect(readme).toContain("TypeScript");
     expect(readme).toContain("ProseMirror");
     expect(readme).toContain("CodeMirror 6");
@@ -27,7 +36,13 @@ describe("project documentation language order", () => {
   });
 
   test("Chinese README links back to the English guide", () => {
-    expect(normalizeLineEndings(readmeZh).startsWith("[English](README.md)\n\n# Typora-Web\n")).toBe(true);
+    expect(normalizeLineEndings(readmeZh).startsWith(
+      "[English](README.md)\n\n" +
+        "<p align=\"center\">\n" +
+        "  <img src=\"public/favicon.svg\" alt=\"Typora-Web 标志\" width=\"96\" />\n" +
+        "</p>\n\n" +
+        "# Typora-Web\n",
+    )).toBe(true);
     expect(readmeZh).toContain("## 技术选型");
     expect(readmeZh).toContain("## 来源与致谢");
     expect(readmeZh).toContain("[Yuyz0112/typora-web][original-typora-web]");
@@ -37,6 +52,9 @@ describe("project documentation language order", () => {
     expect(readmeZh).toContain("## Markdown 支持");
     expect(readmeZh).toContain("## 架构");
     expect(readmeZh).toContain("## 开发");
+    expect(readmeZh).toContain("```mermaid\nflowchart TD");
+    expect(readmeZh).toContain("浏览器中的作者");
+    expect(readmeZh).toContain("defaultPlugins 功能栈");
     expect(readmeZh).toContain("TypeScript");
     expect(readmeZh).toContain("ProseMirror");
     expect(readmeZh).toContain("CodeMirror 6");
@@ -60,6 +78,8 @@ describe("project documentation language order", () => {
     );
     expect(syntaxSurvey).toContain("| Underline | Supported |");
     expect(syntaxSurvey).toContain("| Bare URL autolinks | Supported |");
+    expect(syntaxSurvey).toContain("| Image size extensions | Partial |");
+    expect(syntaxSurvey).toContain("mermaid@11.15.0");
     expect(syntaxSurvey).toContain("CodeMirror 6 highlighting");
     expect(syntaxSurvey).not.toContain(
       "| Callouts / GitHub alerts | Backlog |",
