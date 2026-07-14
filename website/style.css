@@ -585,6 +585,31 @@ html, body {
   color: #1f1f1f;
   outline: none;
 }
+.ProseMirror .editor-search-match {
+  border-radius: 2px;
+  background: rgba(255, 214, 77, 0.46);
+  box-shadow: 0 0 0 1px rgba(190, 139, 0, 0.18);
+}
+.ProseMirror .editor-search-match-current {
+  background: rgba(255, 176, 32, 0.72);
+  box-shadow: 0 0 0 2px rgba(209, 125, 0, 0.35);
+}
+.ProseMirror .editor-search-match-current.syntax-hidden {
+  font-size: 0.82em;
+}
+.ProseMirror .editor-search-node-current {
+  border-radius: 5px;
+  outline: 2px solid rgba(209, 125, 0, 0.52);
+  outline-offset: 3px;
+}
+.ProseMirror .editor-search-replacement {
+  background: rgba(80, 183, 103, 0.38);
+  box-shadow: 0 0 0 1px rgba(36, 132, 57, 0.24);
+}
+.ProseMirror .editor-search-replacement.editor-search-match-current {
+  background: rgba(65, 174, 90, 0.58);
+  box-shadow: 0 0 0 2px rgba(32, 124, 52, 0.34);
+}
 
 @media (max-width: 760px) {
   .site-nav {
@@ -1165,6 +1190,25 @@ html, body {
 :root[data-appearance="dark"] .editor-search-panel button:focus-visible {
   color: #ece7dd;
   background: #303339;
+}
+:root[data-appearance="dark"] .ProseMirror .editor-search-match {
+  background: rgba(202, 151, 34, 0.42);
+  box-shadow: 0 0 0 1px rgba(255, 211, 105, 0.2);
+}
+:root[data-appearance="dark"] .ProseMirror .editor-search-match-current {
+  background: rgba(232, 154, 30, 0.66);
+  box-shadow: 0 0 0 2px rgba(255, 194, 82, 0.34);
+}
+:root[data-appearance="dark"] .ProseMirror .editor-search-node-current {
+  outline-color: rgba(255, 194, 82, 0.56);
+}
+:root[data-appearance="dark"] .ProseMirror .editor-search-replacement {
+  background: rgba(57, 143, 78, 0.46);
+  box-shadow: 0 0 0 1px rgba(122, 219, 143, 0.24);
+}
+:root[data-appearance="dark"] .ProseMirror .editor-search-replacement.editor-search-match-current {
+  background: rgba(62, 164, 86, 0.64);
+  box-shadow: 0 0 0 2px rgba(132, 230, 154, 0.32);
 }
 :root[data-appearance="dark"] .editor-menu-dropdown button:hover,
 :root[data-appearance="dark"] .editor-menu-dropdown button:focus-visible,
