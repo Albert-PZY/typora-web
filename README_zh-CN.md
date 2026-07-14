@@ -8,6 +8,10 @@
 
 > 面向 Web 的原生、轻量、高性能 Typora 风格 Markdown 编辑器。
 
+<p align="center">
+  <img src="docs/assets/readme-hero.svg" alt="Typora-Web 保留源码的编辑器架构" width="900" />
+</p>
+
 Typora-Web 让 Markdown 在编辑时尽量接近最终文档形态，同时保留可往返序列化的 Markdown 源码。源码标记会在不需要时弱化或隐藏，数学公式、Mermaid 图表、代码块、表格、任务列表等富内容会在原地呈现。
 
 项目使用 TypeScript、ProseMirror、markdown-it、CodeMirror 6、KaTeX、Mermaid、DOMPurify 和原生 DOM API 构建。项目不引入 Vue、React、Svelte、Angular 等前端框架。
@@ -139,6 +143,7 @@ document.documentElement.style.colorScheme = "dark";
 | `editor.setTypewriterMode(enabled)` | 显式设置打字机模式 |
 | `editor.isTypewriterMode()` | 返回打字机模式状态 |
 | `editor.openMarkdownFile()` | 在浏览器支持时打开本地 `.md` 文件 |
+| `editor.newMarkdownFile()` | 新建无标题文档且不弹出保存选择器 |
 | `editor.saveMarkdownFile()` | 保存到当前文件句柄，或回退到另存为 |
 | `editor.saveMarkdownFileAs()` | 通过 File System Access API 或下载回退执行另存为 |
 | `editor.getCurrentFileName()` | 返回当前文件名 |
