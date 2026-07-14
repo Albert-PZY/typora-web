@@ -1,6 +1,7 @@
 import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
 
 import { mountNav } from "../website/components/nav.ts";
+import favicon from "../public/favicon.svg?raw";
 import indexHtml from "../website/index.html?raw";
 import viteConfig from "../vite.config.ts?raw";
 
@@ -25,5 +26,12 @@ describe("website logo", () => {
     expect(indexHtml).toContain('href="favicon.svg"');
     expect(indexHtml).not.toContain('href="/favicon.svg"');
     expect(viteConfig).toContain('publicDir: "../public"');
+  });
+
+  test("keeps the favicon as a lightweight native vector", () => {
+    expect(favicon).toContain('viewBox="0 0 64 64"');
+    expect(favicon).toContain("linearGradient");
+    expect(favicon).not.toContain("data:image");
+    expect(new TextEncoder().encode(favicon).byteLength).toBeLessThan(3_000);
   });
 });

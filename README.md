@@ -8,6 +8,10 @@
 
 > A native, lightweight, high-performance Typora-style Markdown editor for the web.
 
+<p align="center">
+  <img src="docs/assets/readme-hero.svg" alt="Typora-Web source-preserving editor architecture" width="900" />
+</p>
+
 Typora-Web makes Markdown feel like a finished document while it is still being
 edited. Source markers fade when they are not needed, rich blocks render in
 place, and the underlying Markdown remains round-trippable.
@@ -159,6 +163,7 @@ theme import was removed to keep the editor style surface predictable.
 | `editor.setTypewriterMode(enabled)` | Set typewriter mode explicitly |
 | `editor.isTypewriterMode()` | Return whether typewriter mode is active |
 | `editor.openMarkdownFile()` | Open a local `.md` file when available |
+| `editor.newMarkdownFile()` | Start a clean untitled document without opening a picker |
 | `editor.saveMarkdownFile()` | Save to the current file handle or fall back to Save As |
 | `editor.saveMarkdownFileAs()` | Save through File System Access API or download fallback |
 | `editor.getCurrentFileName()` | Return the current local file name, when known |
