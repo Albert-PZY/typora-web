@@ -1,4 +1,5 @@
 import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
+import { AllSelection, TextSelection } from "prosemirror-state";
 
 import { createEditor } from "../src/lib.ts";
 import { setLocale } from "../website/i18n.ts";
@@ -335,6 +336,7 @@ describe("editor shell controls", () => {
 
   test("maps file menu results into status messages", async () => {
     const { root, editor, statusMessages, cleanup } = mountShell();
+    const previousConfirm = window.confirm;
     const openResults = [
       { status: "opened", name: "note.md" },
       { status: "cancelled" },
@@ -343,10 +345,10 @@ describe("editor shell controls", () => {
       { status: "error" },
       { status: "mystery" },
     ];
-    editor.createMarkdownFile = async () => ({ status: "saved", name: "created.md" });
     editor.openMarkdownFile = async () => openResults.shift() as never;
     editor.saveMarkdownFile = async () => ({ status: "saved", name: "note.md" });
     editor.saveMarkdownFileAs = async () => ({ status: "downloaded", name: "note.md" });
+    window.confirm = () => true;
 
     try {
       clickAction(root, "new");
@@ -366,10 +368,11 @@ describe("editor shell controls", () => {
       expect(statusMessages).toContain("home.status.error:open failed");
       expect(statusMessages).toContain("home.status.failed:");
       expect(statusMessages).toContain("home.status.error:mystery");
-      expect(statusMessages).toContain("home.status.saved:created.md");
+      expect(statusMessages).toContain("home.status.newDocument:");
       expect(statusMessages).toContain("home.status.saved:note.md");
       expect(statusMessages).toContain("home.status.downloaded:note.md");
     } finally {
+      window.confirm = previousConfirm;
       cleanup();
     }
   });
@@ -400,7 +403,7 @@ describe("editor shell controls", () => {
 
       root.querySelector<HTMLButtonElement>("[data-file-path='typora-web/learn/demo.md']")?.click();
       await flushAsync();
-      expect(statusMessages).toContain("home.status.notImplemented:");
+      expect(statusMessages).toContain("home.status.opened:demo.md");
 
       const fakeFile = document.createElement("button");
       fakeFile.dataset.filePath = "missing.md";
@@ -408,7 +411,7 @@ describe("editor shell controls", () => {
       fakeFile.click();
       await flushAsync();
       expect(statusMessages.filter((message) => message === "home.status.notImplemented:").length)
-        .toBeGreaterThanOrEqual(2);
+        .toBe(1);
     } finally {
       window.showDirectoryPicker = previousPicker;
       cleanup();
@@ -416,7 +419,7 @@ describe("editor shell controls", () => {
   });
 
   test("runs browser-backed menu actions defensively", async () => {
-    const { root, statusMessages, cleanup } = mountShell();
+    const { root, editor, statusMessages, cleanup } = mountShell();
     const previousExec = document.execCommand;
     const previousPrint = window.print;
     const previousOpen = window.open;
@@ -448,6 +451,8 @@ describe("editor shell controls", () => {
     });
 
     try {
+      const before = editor.getMarkdown();
+      editor.view.dispatch(editor.view.state.tr.insertText("x"));
       clickAction(root, "select-all");
       clickAction(root, "undo");
       clickAction(root, "new-window");
@@ -465,12 +470,14 @@ describe("editor shell controls", () => {
 
       clickAction(root, "search");
 
-      expect(execCommands).toEqual(["selectAll", "undo"]);
+      expect(execCommands).toEqual([]);
+      expect(editor.getMarkdown()).toBe(before);
       expect(opened).toEqual([window.location.href]);
       expect(printed).toBe(true);
       expect(requested).toBe(1);
       expect(exited).toBe(1);
-      expect(statusMessages).toContain("home.status.notImplemented:");
+      expect(root.querySelector<HTMLElement>(".editor-search-panel")?.hidden).toBe(false);
+      expect(statusMessages).not.toContain("home.status.notImplemented:");
     } finally {
       document.execCommand = previousExec;
       window.print = previousPrint;
@@ -584,6 +591,156 @@ describe("editor shell controls", () => {
 
       clickAction(root, "heading-3");
       expect(editor.getMarkdown()).toBe("### Body text");
+    } finally {
+      cleanup();
+    }
+  });
+
+  test("applies block menu commands through the shared editor keymap", () => {
+    const cases = [
+      ["math-block", "", "$$\n\n$$"],
+      ["code-block", "", "```\n\n```"],
+      ["quote", "Body", "> Body"],
+      ["ordered-list", "Body", "1. Body"],
+      ["bullet-list", "Body", "- Body"],
+      ["task-list", "Body", "- [ ] Body"],
+    ] as const;
+
+    for (const [action, seed, expected] of cases) {
+      const { root, editor, cleanup } = mountShell(seed);
+      try {
+        clickAction(root, action);
+        expect(editor.getMarkdown(), action).toBe(expected);
+      } finally {
+        cleanup();
+      }
+    }
+
+    const { root, editor, cleanup } = mountShell("One\n\nTwo");
+    try {
+      editor.view.dispatch(editor.view.state.tr.setSelection(new AllSelection(editor.view.state.doc)));
+      clickAction(root, "task-list");
+      expect(editor.getMarkdown()).toBe("- [ ] One\n- [ ] Two");
+    } finally {
+      cleanup();
+    }
+  });
+
+  test("applies inline format menu commands by mutating Markdown source text", () => {
+    const cases = [
+      ["bold", "**text**"],
+      ["italic", "*text*"],
+      ["underline", "<u>text</u>"],
+      ["inline-code", "`text`"],
+      ["inline-math", "$text$"],
+      ["strike", "~~text~~"],
+      ["highlight", "==text=="],
+      ["link", "[text](url)"],
+      ["image", "![text](url)"],
+    ] as const;
+
+    for (const [action, expected] of cases) {
+      const { root, editor, cleanup } = mountShell("text");
+      try {
+        editor.view.dispatch(editor.view.state.tr.setSelection(
+          TextSelection.create(editor.view.state.doc, 1, 5),
+        ));
+        clickAction(root, action);
+        expect(editor.getMarkdown(), action).toBe(expected);
+      } finally {
+        cleanup();
+      }
+    }
+
+    const { root, editor, cleanup } = mountShell("**text**");
+    try {
+      editor.view.dispatch(editor.view.state.tr.setSelection(
+        TextSelection.create(editor.view.state.doc, 1, 9),
+      ));
+      clickAction(root, "clear-style");
+      expect(editor.getMarkdown()).toBe("text");
+    } finally {
+      cleanup();
+    }
+  });
+
+  test("finds, replaces, and replaces all matches", () => {
+    const { root, editor, cleanup } = mountShell("Body body");
+
+    try {
+      clickAction(root, "find");
+      const panel = root.querySelector<HTMLElement>(".editor-search-panel")!;
+      const query = panel.querySelector<HTMLInputElement>('[data-search-field="query"]')!;
+      const replacement = panel.querySelector<HTMLInputElement>(
+        '[data-search-field="replacement"]',
+      )!;
+
+      expect(panel.hidden).toBe(false);
+      query.value = "body";
+      query.dispatchEvent(new InputEvent("input", { bubbles: true }));
+      expect(editor.view.state.doc.textBetween(
+        editor.view.state.selection.from,
+        editor.view.state.selection.to,
+      )).toBe("Body");
+      expect(panel.querySelector(".editor-search-count")?.textContent).toBe("1 / 2");
+
+      replacement.value = "Copy";
+      panel.querySelector<HTMLButtonElement>('[data-search-action="replace"]')?.click();
+      expect(editor.getMarkdown()).toBe("Copy body");
+
+      panel.querySelector<HTMLButtonElement>('[data-search-action="replace-all"]')?.click();
+      expect(editor.getMarkdown()).toBe("Copy Copy");
+      expect(panel.querySelector(".editor-search-count")?.textContent).toBe("Replaced 1");
+    } finally {
+      cleanup();
+    }
+  });
+
+  test("copies Markdown and pastes plain text through the Clipboard API", async () => {
+    const { root, editor, statusMessages, cleanup } = mountShell("# Body");
+    const clipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+    let written = "";
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        async writeText(value: string) { written = value; },
+        async readText() { return "Pasted"; },
+      },
+    });
+
+    try {
+      editor.view.dispatch(editor.view.state.tr.setSelection(
+        TextSelection.create(editor.view.state.doc, 1, 5),
+      ));
+      clickAction(root, "copy-markdown");
+      await flushAsync();
+      expect(written).toBe("# Body");
+      expect(statusMessages).toContain("home.status.copied:");
+
+      clickAction(root, "paste-text");
+      await flushAsync();
+      expect(editor.getMarkdown()).toBe("# Pasted");
+      expect(statusMessages).toContain("home.status.pasted:");
+    } finally {
+      if (clipboardDescriptor) Object.defineProperty(navigator, "clipboard", clipboardDescriptor);
+      else delete (navigator as unknown as Record<string, unknown>).clipboard;
+      cleanup();
+    }
+  });
+
+  test("preserves focus mode across document and source-view rebuilds", () => {
+    const { editor, root, cleanup } = mountShell("Body");
+
+    try {
+      editor.setFocusMode(true);
+      editor.setMarkdown("# Rebuilt");
+      expect(editor.isFocusMode()).toBe(true);
+      expect(root.querySelector(".typora-web-wrap")?.classList.contains("tw-focus-mode")).toBe(true);
+
+      editor.toggleSource();
+      editor.toggleSource();
+      expect(editor.isFocusMode()).toBe(true);
+      expect(root.querySelector(".typora-web-wrap")?.classList.contains("tw-focus-mode")).toBe(true);
     } finally {
       cleanup();
     }

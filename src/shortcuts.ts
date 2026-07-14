@@ -6,6 +6,7 @@ import { wrapInList } from "prosemirror-schema-list";
 
 import { convertCurrentBlockquoteCallout } from "./callouts.ts";
 import { insertMathBlockCommand } from "./features/math.ts";
+import { insertTaskListCommand } from "./features/task.ts";
 
 function insertHardBreak(schema: Schema): Command {
   return (state, dispatch) => {
@@ -19,7 +20,7 @@ function insertHardBreak(schema: Schema): Command {
   };
 }
 
-function wrapSelection(open: string, close = open): Command {
+export function wrapSelection(open: string, close = open): Command {
   return (state, dispatch) => {
     const { from, to, empty } = state.selection;
     if (dispatch) {
@@ -34,17 +35,7 @@ function wrapSelection(open: string, close = open): Command {
 }
 
 function insertEmptyLink(): Command {
-  return (state, dispatch) => {
-    const { from } = state.selection;
-    if (dispatch) {
-      const link = state.schema.marks.link.create({ href: "url", title: null });
-      const tr = state.tr.insertText("[](url)", from, from);
-      tr.addMark(from + 1, from + 1, link);
-      tr.setSelection(TextSelection.create(tr.doc, from + 1));
-      dispatch(tr);
-    }
-    return true;
-  };
+  return wrapSelection("[", "](url)");
 }
 
 function setHeading(schema: Schema, level: number): Command {
@@ -67,6 +58,9 @@ export function commonShortcutKeymap(schema: Schema): Record<string, Command> {
   return {
     "Mod-b": wrapSelection("**"),
     "Mod-i": wrapSelection("*"),
+    "Mod-u": wrapSelection("<u>", "</u>"),
+    "Mod-Shift-`": wrapSelection("`"),
+    "Alt-Shift-5": wrapSelection("~~"),
     "Mod-k": insertEmptyLink(),
     "Shift-Enter": insertHardBreak(schema),
     "Mod-0": setBlockType(schema.nodes.paragraph),
@@ -78,6 +72,7 @@ export function commonShortcutKeymap(schema: Schema): Record<string, Command> {
     "Mod-6": setHeading(schema, 6),
     "Mod-Shift-q": wrapIn(schema.nodes.blockquote),
     "Mod-Shift-8": wrapInList(schema.nodes.bullet_list),
+    "Mod-Shift-x": insertTaskListCommand(schema),
     "Mod-Shift-7": wrapInList(schema.nodes.ordered_list),
     "Mod-Shift-k": insertCodeBlockCommand(schema),
     "Mod-Shift-m": insertMathBlockCommand(schema),

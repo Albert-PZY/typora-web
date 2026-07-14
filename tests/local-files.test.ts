@@ -3,6 +3,7 @@ import { describe, expect, test } from "@voidzero-dev/vite-plus-test";
 import { createEditor } from "../src/lib.ts";
 import {
   createMarkdownFile,
+  pickMarkdownFile,
   pickMarkdownDirectory,
   readMarkdownFileHandle,
   saveMarkdownFileAs,
@@ -239,6 +240,52 @@ describe("local markdown files", () => {
     }
   });
 
+  test("reports file read failures after a picker succeeds", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const editor = createEditor(host, { initialContent: "unchanged" });
+    const oldPicker = window.showOpenFilePicker;
+    window.showOpenFilePicker = async () => [{
+      name: "broken.md",
+      async getFile() {
+        return {
+          name: "broken.md",
+          async text() { throw new Error("read failed"); },
+        } as unknown as File;
+      },
+    } as FileSystemFileHandle];
+
+    try {
+      await expect(editor.openMarkdownFile()).resolves.toEqual({
+        status: "error",
+        message: "read failed",
+      });
+      expect(editor.getMarkdown()).toBe("unchanged");
+    } finally {
+      window.showOpenFilePicker = oldPicker;
+      editor.destroy();
+      host.remove();
+    }
+  });
+
+  test("settles the file input fallback when the chooser closes without a change event", async () => {
+    const oldPicker = window.showOpenFilePicker;
+    const oldClick = HTMLInputElement.prototype.click;
+    window.showOpenFilePicker = undefined;
+    HTMLInputElement.prototype.click = () => {};
+
+    try {
+      const resultPromise = pickMarkdownFile();
+      window.dispatchEvent(new Event("focus"));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await expect(resultPromise).resolves.toEqual({ status: "cancelled" });
+      expect(document.querySelector('input[type="file"]')).toBeNull();
+    } finally {
+      HTMLInputElement.prototype.click = oldClick;
+      window.showOpenFilePicker = oldPicker;
+    }
+  });
+
   test("file input fallback reports click errors", async () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
@@ -291,6 +338,29 @@ describe("local markdown files", () => {
       expect(written).toBe("changed");
     } finally {
       window.showOpenFilePicker = oldPicker;
+      editor.destroy();
+      host.remove();
+    }
+  });
+
+  test("starts a clean untitled buffer without opening a picker", async () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const editor = createEditor(host, { initialContent: "draft" });
+    const handle = {
+      name: "draft.md",
+      async getFile() {
+        return new File(["draft"], "draft.md", { type: "text/markdown" });
+      },
+    };
+
+    try {
+      await editor.openMarkdownFileHandle(handle as FileSystemFileHandle);
+      editor.newMarkdownFile();
+
+      expect(editor.getMarkdown()).toBe("");
+      expect(editor.getCurrentFileName()).toBeNull();
+    } finally {
       editor.destroy();
       host.remove();
     }

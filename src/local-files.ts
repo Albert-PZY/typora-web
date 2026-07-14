@@ -133,23 +133,40 @@ function pickMarkdownFileWithInput(): Promise<
   if (typeof document === "undefined") return Promise.resolve({ status: "unsupported" });
   return new Promise((resolve) => {
     const input = document.createElement("input");
+    let settled = false;
+    let cancelTimer = 0;
     input.type = "file";
     input.accept = ".md,.markdown,.mdown,text/markdown,text/plain";
     input.style.display = "none";
     const cleanup = (): void => {
+      window.clearTimeout(cancelTimer);
+      window.removeEventListener("focus", onWindowFocus);
       input.remove();
+    };
+    const finish = (result: { status: "picked"; handle: null; file: File } | { status: "cancelled" } | { status: "error"; message: string }): void => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(result);
+    };
+    const onWindowFocus = (): void => {
+      // Browsers restore window focus before or immediately after the
+      // input's change event. Give change one task to win, then treat an
+      // empty selection as an explicit chooser cancellation.
+      cancelTimer = window.setTimeout(() => {
+        if (!input.files?.length) finish({ status: "cancelled" });
+      }, 0);
     };
     input.addEventListener("change", () => {
       const file = input.files?.[0] ?? null;
-      cleanup();
-      resolve(file ? { status: "picked", handle: null, file } : { status: "cancelled" });
+      finish(file ? { status: "picked", handle: null, file } : { status: "cancelled" });
     }, { once: true });
+    window.addEventListener("focus", onWindowFocus);
     document.body.appendChild(input);
     try {
       input.click();
     } catch (error) {
-      cleanup();
-      resolve({ status: "error", message: error instanceof Error ? error.message : String(error) });
+      finish({ status: "error", message: error instanceof Error ? error.message : String(error) });
     }
   });
 }
@@ -168,11 +185,14 @@ export async function writeMarkdownFile(
   }
 }
 
-export async function saveMarkdownFileAs(markdown: string): Promise<FileResult> {
-  if (!window.showSaveFilePicker) return downloadMarkdown(markdown, "untitled.md");
+export async function saveMarkdownFileAs(
+  markdown: string,
+  suggestedName = "untitled.md",
+): Promise<FileResult> {
+  if (!window.showSaveFilePicker) return downloadMarkdown(markdown, suggestedName);
   try {
     const handle = await window.showSaveFilePicker({
-      suggestedName: "untitled.md",
+      suggestedName,
       types: [
         {
           description: "Markdown",

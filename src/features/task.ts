@@ -1,8 +1,14 @@
 import type { Node as PMNode } from "prosemirror-model";
-import type { NodeSpec } from "prosemirror-model";
-import { liftListItem, splitListItem } from "prosemirror-schema-list";
+import type { NodeSpec, Schema } from "prosemirror-model";
+import { liftListItem, splitListItem, wrapInList } from "prosemirror-schema-list";
 import { InputRule } from "prosemirror-inputrules";
-import { Plugin, TextSelection, type Command, type Transaction } from "prosemirror-state";
+import {
+  Plugin,
+  TextSelection,
+  type Command,
+  type Selection,
+  type Transaction,
+} from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 
 import type { FeatureSpec } from "./_types.ts";
@@ -395,6 +401,79 @@ const taskEnter: Command = (state, dispatch, view) => {
     ),
   );
 };
+
+function selectionTouchesListItem(
+  doc: PMNode,
+  selection: Selection,
+  listItemType: import("prosemirror-model").NodeType,
+): boolean {
+  const { $from } = selection;
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    if ($from.node(depth).type === listItemType) return true;
+  }
+  let found = false;
+  doc.nodesBetween(selection.from, selection.to, (node) => {
+    if (node.type === listItemType) found = true;
+    return !found;
+  });
+  return found;
+}
+
+function taskMarkerPositions(
+  doc: PMNode,
+  selection: Selection,
+  schema: Schema,
+): number[] {
+  const positions: number[] = [];
+  if (selection.empty) {
+    const { $from } = selection;
+    for (let depth = $from.depth; depth > 0; depth -= 1) {
+      const node = $from.node(depth);
+      if (node.type !== schema.nodes.list_item) continue;
+      if (node.firstChild?.firstChild?.type !== schema.nodes.task_marker) {
+        positions.push($from.before(depth) + 2);
+      }
+      break;
+    }
+    return positions;
+  }
+  doc.nodesBetween(selection.from, selection.to, (node, position) => {
+    if (node.type !== schema.nodes.list_item) return true;
+    const paragraph = node.firstChild;
+    if (
+      paragraph?.type === schema.nodes.paragraph &&
+      paragraph.firstChild?.type !== schema.nodes.task_marker
+    ) {
+      positions.push(position + 2);
+    }
+    return true;
+  });
+  return positions;
+}
+
+export function insertTaskListCommand(schema: Schema): Command {
+  return (state, dispatch, view) => {
+    let transaction = state.tr;
+    if (!selectionTouchesListItem(state.doc, state.selection, schema.nodes.list_item)) {
+      let wrappedTransaction: Transaction | null = null;
+      const wrapped = wrapInList(schema.nodes.bullet_list)(
+        state,
+        (next) => { wrappedTransaction = next; },
+        view,
+      );
+      if (!wrapped) return false;
+      if (!dispatch || !wrappedTransaction) return true;
+      for (const step of (wrappedTransaction as Transaction).steps) transaction.step(step);
+    }
+    const positions = taskMarkerPositions(transaction.doc, transaction.selection, schema);
+    if (!dispatch) return positions.length > 0;
+    for (const position of positions.reverse()) {
+      transaction.insert(position, schema.nodes.task_marker.create({ checked: false }));
+    }
+    dispatch(transaction.scrollIntoView());
+    return true;
+  };
+}
 
 // Propagate task_marker into any newly-emptied li that follows a task
 // li at the same level — covers the "Enter from bulletless paragraph
