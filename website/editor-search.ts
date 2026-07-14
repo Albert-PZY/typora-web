@@ -1,9 +1,48 @@
-import { TextSelection } from "prosemirror-state";
+import { Plugin, PluginKey, TextSelection } from "prosemirror-state";
+import { Decoration, DecorationSet } from "prosemirror-view";
 
 import type { Editor } from "../src/lib.ts";
 import { onLocaleChange, t, translateTree } from "./i18n.ts";
 
 type SearchMatch = { from: number; to: number };
+
+type SearchHighlightMeta = {
+  matches: SearchMatch[];
+  activeIndex: number;
+  kind?: "match" | "replacement";
+};
+
+const searchHighlightKey = new PluginKey<DecorationSet>("website-search-highlights");
+const searchHighlightPlugin = new Plugin<DecorationSet>({
+  key: searchHighlightKey,
+  state: {
+    init: () => DecorationSet.empty,
+    apply(transaction, current, _oldState, newState) {
+      const meta = transaction.getMeta(searchHighlightKey) as SearchHighlightMeta | undefined;
+      if (meta) {
+        const decorations = meta.matches
+          .filter((match) => match.from < match.to && match.to <= newState.doc.content.size)
+          .map((match, index) => Decoration.inline(match.from, match.to, {
+            class: [
+              "editor-search-match",
+              meta.kind === "replacement" ? "editor-search-replacement" : "",
+              index === meta.activeIndex ? "editor-search-match-current" : "",
+            ].filter(Boolean).join(" "),
+            "data-search-match-index": String(index),
+          }));
+        return DecorationSet.create(newState.doc, decorations);
+      }
+      return transaction.docChanged
+        ? current.map(transaction.mapping, transaction.doc)
+        : current;
+    },
+  },
+  props: {
+    decorations(state) {
+      return searchHighlightKey.getState(state) ?? DecorationSet.empty;
+    },
+  },
+});
 
 export type EditorSearch = {
   open(): void;
@@ -58,6 +97,86 @@ export function mountEditorSearch(main: HTMLElement, editor: Editor): EditorSear
   let matches: SearchMatch[] = [];
   let activeIndex = -1;
 
+  const clearNodeViewHighlight = (): void => {
+    for (const element of editor.view.dom.querySelectorAll(".editor-search-node-current")) {
+      element.classList.remove("editor-search-node-current");
+    }
+  };
+
+  const ensureHighlightPlugin = (): void => {
+    const view = editor.view;
+    if (searchHighlightKey.getState(view.state) !== undefined) return;
+    view.updateState(view.state.reconfigure({
+      plugins: [...view.state.plugins, searchHighlightPlugin],
+    }));
+  };
+
+  const updateHighlights = (kind: SearchHighlightMeta["kind"] = "match"): void => {
+    clearNodeViewHighlight();
+    ensureHighlightPlugin();
+    editor.view.dispatch(editor.view.state.tr.setMeta(searchHighlightKey, {
+      matches,
+      activeIndex,
+      kind,
+    } satisfies SearchHighlightMeta));
+  };
+
+  const scrollElementToCenter = (element: Element | null): boolean => {
+    if (!(element instanceof HTMLElement) || typeof element.scrollIntoView !== "function") {
+      return false;
+    }
+    const bounds = element.getBoundingClientRect();
+    if (bounds.width <= 0 && bounds.height <= 0) return false;
+    element.scrollIntoView({
+      block: "center",
+      inline: "nearest",
+      behavior: "auto",
+    });
+    return true;
+  };
+
+  const scrollRenderedAncestorToCenter = (start: Element | null): boolean => {
+    let element = start;
+    while (element) {
+      if (scrollElementToCenter(element)) {
+        return true;
+      }
+      element = element.parentElement;
+    }
+    return false;
+  };
+
+  const scrollPositionToCenter = (position: number, highlightNodeView = false): void => {
+    try {
+      const clamped = Math.max(0, Math.min(position, editor.view.state.doc.content.size));
+      const target = editor.view.domAtPos(clamped).node;
+      const start = target instanceof Element ? target : target.parentElement;
+      const nodeView = highlightNodeView
+        ? start?.closest<HTMLElement>('[contenteditable="false"]') ?? null
+        : null;
+      if (nodeView) {
+        nodeView.classList.add("editor-search-node-current");
+        if (!scrollElementToCenter(nodeView)) scrollRenderedAncestorToCenter(nodeView.parentElement);
+        return;
+      }
+      scrollRenderedAncestorToCenter(start);
+    } catch {}
+  };
+
+  const scrollActiveMatchToCenter = (match: SearchMatch): void => {
+    clearNodeViewHighlight();
+    const highlighted = editor.view.dom.querySelector(".editor-search-match-current");
+    if (scrollElementToCenter(highlighted)) return;
+    const nodeView = highlighted?.closest<HTMLElement>('[contenteditable="false"]') ?? null;
+    if (nodeView) {
+      nodeView.classList.add("editor-search-node-current");
+      if (!scrollElementToCenter(nodeView)) scrollRenderedAncestorToCenter(nodeView.parentElement);
+      return;
+    }
+    if (scrollRenderedAncestorToCenter(highlighted?.parentElement ?? null)) return;
+    scrollPositionToCenter(match.from, true);
+  };
+
   const renderCount = (replacementCount?: number): void => {
     if (replacementCount !== undefined) {
       count.textContent = t("home.search.replaced", { count: replacementCount });
@@ -77,15 +196,19 @@ export function mountEditorSearch(main: HTMLElement, editor: Editor): EditorSear
     matches = findMatches(editor, queryInput.value);
     if (matches.length === 0) {
       activeIndex = -1;
+      updateHighlights();
       renderCount();
       return;
     }
     activeIndex = ((index % matches.length) + matches.length) % matches.length;
     const match = matches[activeIndex]!;
+    ensureHighlightPlugin();
     const transaction = editor.view.state.tr
       .setSelection(TextSelection.create(editor.view.state.doc, match.from, match.to))
+      .setMeta(searchHighlightKey, { matches, activeIndex } satisfies SearchHighlightMeta)
       .scrollIntoView();
     editor.view.dispatch(transaction);
+    scrollActiveMatchToCenter(match);
     renderCount();
   };
 
@@ -93,13 +216,17 @@ export function mountEditorSearch(main: HTMLElement, editor: Editor): EditorSear
     matches = findMatches(editor, queryInput.value);
     activeIndex = matches.length > 0 ? 0 : -1;
     if (activeIndex >= 0) selectMatch(activeIndex);
-    else renderCount();
+    else {
+      updateHighlights();
+      renderCount();
+    }
   };
 
   const replaceCurrent = (): void => {
     matches = findMatches(editor, queryInput.value);
     if (matches.length === 0) {
       activeIndex = -1;
+      updateHighlights();
       renderCount();
       return;
     }
@@ -111,7 +238,13 @@ export function mountEditorSearch(main: HTMLElement, editor: Editor): EditorSear
     matches = findMatches(editor, queryInput.value);
     if (matches.length > 0) selectMatch(Math.min(index, matches.length - 1));
     else {
-      activeIndex = -1;
+      matches = replacementInput.value
+        ? [{ from: match.from, to: match.from + replacementInput.value.length }]
+        : [];
+      activeIndex = matches.length > 0 ? 0 : -1;
+      updateHighlights("replacement");
+      if (matches[0]) scrollActiveMatchToCenter(matches[0]);
+      else scrollPositionToCenter(match.from);
       renderCount(1);
     }
   };
@@ -120,23 +253,39 @@ export function mountEditorSearch(main: HTMLElement, editor: Editor): EditorSear
     matches = findMatches(editor, queryInput.value);
     if (matches.length === 0) {
       activeIndex = -1;
+      updateHighlights();
       renderCount();
       return;
     }
     const replacementCount = matches.length;
+    const firstMatchPosition = matches[0]!.from;
+    let offset = 0;
+    const replacementMatches = replacementInput.value
+      ? matches.map((match) => {
+        const from = match.from + offset;
+        offset += replacementInput.value.length - (match.to - match.from);
+        return { from, to: from + replacementInput.value.length };
+      })
+      : [];
     let transaction = editor.view.state.tr;
     for (const match of [...matches].reverse()) {
       transaction = transaction.insertText(replacementInput.value, match.from, match.to);
     }
     editor.view.dispatch(transaction.scrollIntoView());
-    matches = findMatches(editor, queryInput.value);
-    activeIndex = -1;
+    matches = replacementMatches;
+    activeIndex = matches.length > 0 ? 0 : -1;
+    updateHighlights("replacement");
+    if (matches[0]) scrollActiveMatchToCenter(matches[0]);
+    else scrollPositionToCenter(firstMatchPosition);
     renderCount(replacementCount);
   };
 
   const close = (): void => {
     if (panel.hidden) return;
     panel.hidden = true;
+    matches = [];
+    activeIndex = -1;
+    updateHighlights();
     editor.focus();
   };
 
@@ -191,6 +340,9 @@ export function mountEditorSearch(main: HTMLElement, editor: Editor): EditorSear
     },
     close,
     destroy(): void {
+      matches = [];
+      activeIndex = -1;
+      updateHighlights();
       cleanupLocale();
       panel.removeEventListener("click", onClick);
       panel.removeEventListener("keydown", onKeyDown);

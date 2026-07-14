@@ -666,6 +666,64 @@ describe("editor shell controls", () => {
 
   test("finds, replaces, and replaces all matches", () => {
     const { root, editor, cleanup } = mountShell("Body body");
+    const previousScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    const previousGetBoundingClientRect = HTMLElement.prototype.getBoundingClientRect;
+    let hideSecondMatch = false;
+    const scrolls: Array<{
+      index: string | null;
+      block?: ScrollLogicalPosition;
+      behavior?: ScrollBehavior;
+    }> = [];
+    HTMLElement.prototype.scrollIntoView = function (options?: boolean | ScrollIntoViewOptions) {
+      const normalized = typeof options === "object" ? options : undefined;
+      scrolls.push({
+        index: this.dataset.searchMatchIndex ?? null,
+        block: normalized?.block,
+        behavior: normalized?.behavior,
+      });
+    };
+    HTMLElement.prototype.getBoundingClientRect = function () {
+      if (this.classList.contains("editor-search-match")) {
+        if (hideSecondMatch && this.dataset.searchMatchIndex === "1") {
+          return {
+            x: 0,
+            y: 0,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: 0,
+            height: 0,
+            toJSON: () => ({}),
+          } as DOMRect;
+        }
+        return {
+          x: 0,
+          y: 0,
+          top: 0,
+          left: 0,
+          right: 48,
+          bottom: 20,
+          width: 48,
+          height: 20,
+          toJSON: () => ({}),
+        } as DOMRect;
+      }
+      if (this.tagName === "P") {
+        return {
+          x: 0,
+          y: 0,
+          top: 0,
+          left: 0,
+          right: 320,
+          bottom: 24,
+          width: 320,
+          height: 24,
+          toJSON: () => ({}),
+        } as DOMRect;
+      }
+      return previousGetBoundingClientRect.call(this);
+    };
 
     try {
       clickAction(root, "find");
@@ -683,15 +741,42 @@ describe("editor shell controls", () => {
         editor.view.state.selection.to,
       )).toBe("Body");
       expect(panel.querySelector(".editor-search-count")?.textContent).toBe("1 / 2");
+      expect(root.querySelectorAll(".editor-search-match")).toHaveLength(2);
+      expect(root.querySelector(".editor-search-match-current")?.getAttribute(
+        "data-search-match-index",
+      )).toBe("0");
+      expect(scrolls.at(-1)).toEqual({ index: "0", block: "center", behavior: "auto" });
+
+      hideSecondMatch = true;
+      panel.querySelector<HTMLButtonElement>('[data-search-action="next"]')?.click();
+      expect(root.querySelector(".editor-search-match-current")?.getAttribute(
+        "data-search-match-index",
+      )).toBe("1");
+      expect(scrolls.at(-1)).toEqual({ index: null, block: "center", behavior: "auto" });
+      hideSecondMatch = false;
+      panel.querySelector<HTMLButtonElement>('[data-search-action="previous"]')?.click();
 
       replacement.value = "Copy";
       panel.querySelector<HTMLButtonElement>('[data-search-action="replace"]')?.click();
       expect(editor.getMarkdown()).toBe("Copy body");
+      expect(root.querySelectorAll(".editor-search-match")).toHaveLength(1);
+      expect(root.querySelector(".editor-search-match-current")?.textContent).toBe("body");
 
       panel.querySelector<HTMLButtonElement>('[data-search-action="replace-all"]')?.click();
       expect(editor.getMarkdown()).toBe("Copy Copy");
       expect(panel.querySelector(".editor-search-count")?.textContent).toBe("Replaced 1");
+      expect(root.querySelectorAll(".editor-search-replacement")).toHaveLength(1);
+      expect(root.querySelector(".editor-search-replacement")?.textContent).toBe("Copy");
+
+      query.value = "Copy";
+      query.dispatchEvent(new InputEvent("input", { bubbles: true }));
+      expect(root.querySelectorAll(".editor-search-match")).toHaveLength(2);
+      panel.querySelector<HTMLButtonElement>('[data-search-action="close"]')?.click();
+      expect(root.querySelectorAll(".editor-search-match")).toHaveLength(0);
     } finally {
+      if (previousScrollIntoView) HTMLElement.prototype.scrollIntoView = previousScrollIntoView;
+      else delete (HTMLElement.prototype as unknown as Record<string, unknown>).scrollIntoView;
+      HTMLElement.prototype.getBoundingClientRect = previousGetBoundingClientRect;
       cleanup();
     }
   });
