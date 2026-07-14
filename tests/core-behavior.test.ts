@@ -252,4 +252,29 @@ describe("core editor behavior", () => {
     feedEvent(mathView, "<Backspace>");
     expect(mathView.state.doc.child(0).type.name).toBe("paragraph");
   });
+
+  test("editor onChange only reports document changes", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const changes: string[] = [];
+    const editor = createEditor(host, {
+      initialContent: "Body",
+      onChange: (markdown) => changes.push(markdown),
+    });
+
+    try {
+      editor.setFocusMode(true);
+      editor.focus();
+      editor.view.dispatch(editor.view.state.tr.setSelection(
+        TextSelection.create(editor.view.state.doc, 2),
+      ));
+      expect(changes).toEqual([]);
+
+      editor.view.dispatch(editor.view.state.tr.insertText("x"));
+      expect(changes).toEqual(["Bxody"]);
+    } finally {
+      editor.destroy();
+      host.remove();
+    }
+  });
 });

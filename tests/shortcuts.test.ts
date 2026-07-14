@@ -27,6 +27,17 @@ describe("common editing shortcuts", () => {
     expect(serialize(next.doc)).toBe("go[x](url)");
   });
 
+  test("format shortcuts wrap underline, inline code, and strikethrough", () => {
+    expect(serialize(apply(selectText("text", 1, 5), ["<Mod-u>"]).doc)).toBe("<u>text</u>");
+    expect(serialize(apply(selectText("text", 1, 5), ["<Mod-Shift-`>"]).doc)).toBe("`text`");
+    expect(serialize(apply(selectText("text", 1, 5), ["<Alt-Shift-5>"]).doc)).toBe("~~text~~");
+  });
+
+  test("Mod-k wraps selected text in a link shell", () => {
+    const next = apply(selectText("docs", 1, 5), ["<Mod-k>"]);
+    expect(serialize(next.doc)).toBe("[docs](url)");
+  });
+
   test("Mod-1 turns the current paragraph into an ATX heading", () => {
     const next = apply(setup("Title"), ["<Mod-1>"]);
     expect(serialize(next.doc)).toBe("# Title");
@@ -69,6 +80,11 @@ describe("common editing shortcuts", () => {
   test("Mod-Shift-8 wraps the current paragraph in a bullet list", () => {
     const next = apply(setup("item"), ["<Mod-Shift-8>"]);
     expect(serialize(next.doc)).toBe("- item");
+  });
+
+  test("Mod-Shift-x turns the current paragraph into a task list", () => {
+    const next = apply(setup("item"), ["<Mod-Shift-x>"]);
+    expect(serialize(next.doc)).toBe("- [ ] item");
   });
 
   test("undo and redo are wired through common shortcuts", () => {

@@ -8,6 +8,8 @@ import { getHomeDemoMarkdown } from "../demo-content.ts";
 import { mountEditorShell } from "../editor-shell.ts";
 import { getLocale, onLocaleChange, t, translateTree } from "../i18n.ts";
 
+const DEMO_TOUCH_EVENTS = ["beforeinput", "paste", "drop", "cut"] as const;
+
 export function shouldSwitchHomeDemoLocale(args: {
   currentLocale: string;
   nextLocale: string;
@@ -62,10 +64,9 @@ export function homeRoute(root: HTMLElement): () => void {
   };
   const editor = createEditor(host, {
     initialContent: getHomeDemoMarkdown(demoLocale),
+    onChange: markDemoTouched,
   });
-  for (const eventName of ["beforeinput", "input", "paste", "drop", "cut"]) {
-    host.addEventListener(eventName, markDemoTouched);
-  }
+  for (const eventName of DEMO_TOUCH_EVENTS) host.addEventListener(eventName, markDemoTouched);
   let lastDemoMarkdown = editor.getMarkdown();
   const status = main.querySelector(".editor-toolbar-status") as HTMLElement;
   let statusMessage: { key: string; vars?: Record<string, string | number | undefined> } | null = null;
@@ -106,9 +107,7 @@ export function homeRoute(root: HTMLElement): () => void {
   const cleanupLocale = onLocaleChange(applyLocale);
 
   return () => {
-    for (const eventName of ["beforeinput", "input", "paste", "drop", "cut"]) {
-      host.removeEventListener(eventName, markDemoTouched);
-    }
+    for (const eventName of DEMO_TOUCH_EVENTS) host.removeEventListener(eventName, markDemoTouched);
     cleanupLocale();
     cleanupNav();
     cleanupShell();

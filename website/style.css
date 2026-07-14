@@ -35,7 +35,7 @@ html, body {
   top: 0;
   background: rgba(245, 244, 240, 0.85);
   backdrop-filter: saturate(180%) blur(12px);
-  z-index: 20;
+  z-index: 30;
 }
 .site-nav .brand {
   display: inline-flex;
@@ -474,7 +474,12 @@ html, body {
   color: #1f1f1f;
 }
 .editor-toolbar-status {
-  display: none;
+  display: block;
+  position: fixed;
+  left: 50%;
+  bottom: 23px;
+  max-width: min(52vw, 520px);
+  transform: translateX(-50%);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -510,6 +515,75 @@ html, body {
 .editor-stats-popover dt,
 .editor-stats-popover dd {
   margin: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.editor-search-panel {
+  position: fixed;
+  top: 70px;
+  right: 32px;
+  z-index: 22;
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) minmax(120px, 200px) auto repeat(5, auto);
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.13);
+  backdrop-filter: blur(12px);
+}
+.editor-search-panel[hidden] { display: none; }
+.editor-search-field input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 28px;
+  padding: 4px 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  outline: none;
+  background: #fff;
+  color: #333;
+  font: 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+.editor-search-field input:focus {
+  border-color: rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.04);
+}
+.editor-search-count {
+  min-width: 48px;
+  color: #888;
+  font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-align: center;
+}
+.editor-search-panel button {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 7px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+  font: 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+.editor-search-panel button:hover,
+.editor-search-panel button:focus-visible {
+  background: rgba(0, 0, 0, 0.055);
+  color: #1f1f1f;
+  outline: none;
 }
 
 @media (max-width: 760px) {
@@ -570,6 +644,15 @@ html, body {
   .editor-sidebar {
     top: 110px;
   }
+  .editor-search-panel {
+    top: 118px;
+    left: 14px;
+    right: 14px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto repeat(3, auto);
+  }
+  .editor-search-count { grid-column: 1 / 3; grid-row: 2; text-align: left; }
+  .editor-search-panel [data-search-action="replace"] { grid-column: 3; grid-row: 2; }
+  .editor-search-panel [data-search-action="replace-all"] { grid-column: 4; grid-row: 2; }
 }
 
 @media (min-width: 900px) {
@@ -1060,10 +1143,28 @@ html, body {
   color: #ece7dd;
 }
 :root[data-appearance="dark"] .editor-menu-dropdown,
-:root[data-appearance="dark"] .editor-stats-popover {
+:root[data-appearance="dark"] .editor-stats-popover,
+:root[data-appearance="dark"] .editor-search-panel {
   background: #24262a;
   border-color: #3c3f43;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
+}
+:root[data-appearance="dark"] .editor-search-field input {
+  color: #ece7dd;
+  background: #1f2125;
+  border-color: #3c3f43;
+}
+:root[data-appearance="dark"] .editor-search-field input:focus {
+  border-color: #666a70;
+  box-shadow: 0 0 0 2px rgba(232, 225, 214, 0.05);
+}
+:root[data-appearance="dark"] .editor-search-panel button {
+  color: #aaa399;
+}
+:root[data-appearance="dark"] .editor-search-panel button:hover,
+:root[data-appearance="dark"] .editor-search-panel button:focus-visible {
+  color: #ece7dd;
+  background: #303339;
 }
 :root[data-appearance="dark"] .editor-menu-dropdown button:hover,
 :root[data-appearance="dark"] .editor-menu-dropdown button:focus-visible,

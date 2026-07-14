@@ -37,7 +37,7 @@ import { serialize } from "./serializer.ts";
 export interface EditorOptions {
   /** Initial markdown the editor opens with. Defaults to empty. */
   initialContent?: string;
-  /** Fired on every document transaction; arg is the current markdown. Raw, no debounce. */
+  /** Fired on every document-changing transaction; arg is the current markdown. Raw, no debounce. */
   onChange?: (md: string) => void;
   /** Fired when the editor surface (rendered or source) gains focus. */
   onFocus?: () => void;
@@ -62,6 +62,8 @@ export interface Editor {
   isTypewriterMode(): boolean;
   openMarkdownFile(): Promise<FileResult>;
   openMarkdownFileHandle(handle: FileSystemFileHandle): Promise<FileResult>;
+  /** Start an untitled document without opening a save picker. */
+  newMarkdownFile(): void;
   createMarkdownFile(): Promise<FileResult>;
   saveMarkdownFile(): Promise<FileResult>;
   saveMarkdownFileAs(): Promise<FileResult>;
@@ -113,7 +115,7 @@ export function createEditor(
         const next = v.state.apply(tr);
         v.updateState(next);
         if (typewriterMode) scrollRenderedCursorToCenter();
-        options.onChange?.(serialize(next.doc));
+        if (tr.docChanged) options.onChange?.(serialize(next.doc));
       },
       handleDOMEvents: {
         focus: () => { options.onFocus?.(); return false; },
@@ -124,9 +126,14 @@ export function createEditor(
   }
 
   function rebuild(md: string): void {
+    const focusMode = readFocusMode(view.state);
     view.destroy();
     editorHost.innerHTML = "";
     view = buildView(md);
+    if (focusMode) {
+      dispatchFocusMode(view.state, (tr) => view.updateState(view.state.apply(tr)), true);
+    }
+    syncModeClasses();
   }
 
   function syncModeClasses(): void {
@@ -321,11 +328,15 @@ export function createEditor(
     async openMarkdownFile(): Promise<FileResult> {
       const picked = await pickMarkdownFile();
       if (picked.status !== "picked") return picked;
-      const text = await picked.file.text();
-      currentFileHandle = picked.handle;
-      currentFileName = picked.handle?.name || picked.file.name;
-      this.setMarkdown(text);
-      return { status: "opened", name: currentFileName };
+      try {
+        const text = await picked.file.text();
+        currentFileHandle = picked.handle;
+        currentFileName = picked.handle?.name || picked.file.name;
+        this.setMarkdown(text);
+        return { status: "opened", name: currentFileName };
+      } catch (error) {
+        return { status: "error", message: error instanceof Error ? error.message : String(error) };
+      }
     },
     async openMarkdownFileHandle(handle: FileSystemFileHandle): Promise<FileResult> {
       const result = await readMarkdownFileHandle(handle);
@@ -334,6 +345,11 @@ export function createEditor(
       currentFileName = result.name;
       this.setMarkdown(result.text);
       return { status: "opened", name: result.name };
+    },
+    newMarkdownFile(): void {
+      currentFileHandle = null;
+      currentFileName = null;
+      this.setMarkdown("");
     },
     async createMarkdownFile(): Promise<FileResult> {
       const result = await createMarkdownFile();
@@ -348,7 +364,7 @@ export function createEditor(
       return writeMarkdownFile(currentFileHandle, this.getMarkdown());
     },
     async saveMarkdownFileAs(): Promise<FileResult> {
-      const result = await saveMarkdownAs(this.getMarkdown());
+      const result = await saveMarkdownAs(this.getMarkdown(), currentFileName ?? "untitled.md");
       if (result.status === "saved") {
         currentFileHandle = result.handle ?? null;
         currentFileName = result.name;
