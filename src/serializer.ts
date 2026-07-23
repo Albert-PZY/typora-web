@@ -102,6 +102,12 @@ export class SerializerState {
     this.closed = null;
   }
 
+  /** True when the previous block was a list (used to avoid list-list blank lines). */
+  closedIsList(): boolean {
+    const name = this.closed?.type.name;
+    return name === "bullet_list" || name === "ordered_list" || name === "list_item";
+  }
+
   write(content = ""): void {
     this.flushClose();
     if (this.delim && this.atBlankLine()) this.out += this.delim;
@@ -322,15 +328,21 @@ const coreBlockHandlers: Record<string, BlockHandler> = {
   },
 
   bullet_list: (state, node) => {
+    // Adjacent list blocks must not gain a blank separator: CommonMark would
+    // re-parse same-type lists across that blank into one list, so source ⇄
+    // preview toggles would rewrite Markdown (extra/missing blank lines).
+    if (state.closedIsList()) state.flushClose(true);
     state.tick("inner");
     node.forEach((item, _, i) => {
       if (i > 0) state.flushClose(true);
       state.wrapBlock("  ", "- ", item, () => state.renderBlockChildren(item));
     });
     state.tick("inner");
+    state.closeBlock(node);
   },
 
   ordered_list: (state, node) => {
+    if (state.closedIsList()) state.flushClose(true);
     const start = (node.attrs.start as number) ?? 1;
     const maxNum = String(start + node.childCount - 1);
     const pad = maxNum.length;
@@ -343,6 +355,7 @@ const coreBlockHandlers: Record<string, BlockHandler> = {
       state.wrapBlock(delim, padded, item, () => state.renderBlockChildren(item));
     });
     state.tick("inner");
+    state.closeBlock(node);
   },
 
   list_item: (state, node) => {
