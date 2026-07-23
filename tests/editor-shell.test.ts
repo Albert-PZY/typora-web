@@ -100,6 +100,56 @@ describe("editor shell controls", () => {
         "statusbar",
         "fullscreen",
       ]);
+      expect(dropdown?.querySelectorAll(".editor-menu-separator").length).toBeGreaterThan(0);
+      expect(dropdown?.querySelector('[data-menu-action="sidebar"] kbd')?.textContent).toBe("Ctrl+Shift+L");
+      expect(dropdown?.querySelector('[data-menu-action="statusbar"] kbd')).toBeNull();
+    } finally {
+      cleanup();
+    }
+  });
+
+  test("switches open menus on hover like a native menubar", () => {
+    const { root, cleanup } = mountShell();
+
+    try {
+      clickMenu(root, "File");
+      expect(root.querySelector(".editor-menu-group.open [data-menu='file']")).not.toBeNull();
+
+      const editButton = Array.from(root.querySelectorAll<HTMLButtonElement>(".editor-menu-button"))
+        .find((button) => button.textContent === "Edit");
+      editButton?.dispatchEvent(new PointerEvent("pointerover", { bubbles: true }));
+
+      expect(root.querySelector(".editor-menu-group.open [data-menu='edit']")).not.toBeNull();
+      expect(root.querySelector(".editor-menu-group.open [data-menu='file']")).toBeNull();
+    } finally {
+      cleanup();
+    }
+  });
+
+  test("disables undo and selection-only actions when they cannot run", () => {
+    const { root, editor, cleanup } = mountShell("Hello");
+
+    try {
+      clickMenu(root, "Edit");
+      expect(root.querySelector('[data-menu-action="undo"]')?.getAttribute("aria-disabled")).toBe("true");
+      expect(root.querySelector('[data-menu-action="cut"]')?.getAttribute("aria-disabled")).toBe("true");
+      expect(root.querySelector('[data-menu-action="undo"]')?.classList.contains("is-disabled")).toBe(true);
+
+      // Create a real history entry via a formatting command so undo enables.
+      editor.view.dispatch(editor.view.state.tr.setSelection(
+        TextSelection.create(editor.view.state.doc, 1, 6),
+      ));
+      clickAction(root, "bold");
+      clickMenu(root, "Edit");
+      expect(root.querySelector('[data-menu-action="undo"]')?.getAttribute("aria-disabled")).toBe("false");
+      expect(root.querySelector('[data-menu-action="undo"]')?.classList.contains("is-disabled")).toBe(false);
+
+      // Selection-only actions enable after a non-empty selection is set.
+      editor.view.dispatch(editor.view.state.tr.setSelection(
+        TextSelection.create(editor.view.state.doc, 1, Math.min(7, editor.view.state.doc.content.size)),
+      ));
+      clickMenu(root, "Edit");
+      expect(root.querySelector('[data-menu-action="cut"]')?.getAttribute("aria-disabled")).toBe("false");
     } finally {
       cleanup();
     }
