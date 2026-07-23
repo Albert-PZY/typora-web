@@ -14,6 +14,9 @@ coverage
 .playwright-mcp
 *.local
 
+# Local diagram tooling (download with the README regenerate command)
+tools/plantuml.jar
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

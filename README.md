@@ -9,7 +9,7 @@
 > A native, lightweight, high-performance Typora-style Markdown editor for the web.
 
 <p align="center">
-  <img src="docs/assets/readme-hero.svg" alt="Typora-Web source-preserving editor architecture" width="900" />
+  <img src="docs/assets/readme-hero.svg" alt="Typora-Web source-preserving editor surface" width="900" />
 </p>
 
 Typora-Web makes Markdown feel like a finished document while it is still being
@@ -211,27 +211,32 @@ For the full compatibility matrix, see [docs/typora-syntax-survey.md](docs/typor
 
 ## Architecture
 
-```mermaid
-flowchart TD
-  User[Writer in the browser] --> Shell[Native website shell]
-  Shell --> API[createEditor controller]
-  API --> State[ProseMirror EditorState]
-  State --> Plugins[defaultPlugins feature stack]
-  Plugins --> Features[src/features]
-  Features --> Parser[markdown-it parser boundary]
-  Features --> Serializer[Markdown serializer]
-  Features --> Views[NodeViews and decorations]
-  Views --> CodeMirror[CodeMirror 6 code editing]
-  Views --> Mermaid[Mermaid SVG preview]
-  Views --> KaTeX[KaTeX math preview]
-  Parser --> State
-  State --> Serializer
-  Serializer --> Files[Local open and save workflows]
-  Specs[specs/features] --> Tests[Spec replay tests]
-  Tests --> Plugins
-```
+Runtime authority is ProseMirror `EditorState`, assembled through the shared
+`defaultPlugins` feature stack. Markdown enters through the parser, leaves
+through the serializer, and never becomes the source of truth while the user is
+editing.
 
-The codebase is organized around small feature modules:
+<p align="center">
+  <img src="docs/assets/typora-web-architecture.png" alt="Typora-Web runtime architecture: website shell, createEditor API, ProseMirror state, feature modules, and in-place renderers" width="920" />
+</p>
+
+Source diagrams live in [`docs/diagrams/`](docs/diagrams/). PNG assets are
+generated with PlantUML so GitHub can display them without a Mermaid renderer.
+
+### Markdown round-trip
+
+<p align="center">
+  <img src="docs/assets/typora-web-data-flow.png" alt="Typora-Web Markdown round-trip flow from parse through live editing to serialize and save" width="720" />
+</p>
+
+### Repository layout
+
+Dependency direction is one-way: `src/` must not import from `tests/`,
+`specs/`, or `website/`.
+
+<p align="center">
+  <img src="docs/assets/typora-web-repo-layout.png" alt="Typora-Web repository layout and one-way dependency between src, website, specs, tests, and docs" width="760" />
+</p>
 
 | Path | Purpose |
 |---|---|
@@ -244,6 +249,7 @@ The codebase is organized around small feature modules:
 | `specs/features/` | Executable behavior specs |
 | `tests/` | Unit tests, parser tests, round-trip tests, and spec replay tests |
 | `website/` | Native demo site and spec catalog |
+| `docs/diagrams/` | PlantUML sources for architecture diagrams |
 
 Feature work should preserve Markdown source form. If a visual preview is needed
 while text remains editable, prefer ProseMirror decorations or NodeViews that
@@ -259,6 +265,12 @@ pnpm dev
 pnpm test
 pnpm build
 pnpm build:lib
+```
+
+Regenerate architecture diagrams after editing PlantUML sources:
+
+```sh
+java -jar tools/plantuml.jar -tpng -o "../assets" docs/diagrams/*.puml
 ```
 
 The test suite is spec-driven. Each behavior spec describes:

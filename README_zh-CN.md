@@ -183,27 +183,27 @@ document.documentElement.style.colorScheme = "dark";
 
 ## 架构
 
-```mermaid
-flowchart TD
-  User[浏览器中的作者] --> Shell[原生网站外壳]
-  Shell --> API[createEditor 控制器]
-  API --> State[ProseMirror EditorState]
-  State --> Plugins[defaultPlugins 功能栈]
-  Plugins --> Features[src/features]
-  Features --> Parser[markdown-it 解析边界]
-  Features --> Serializer[Markdown 序列化器]
-  Features --> Views[NodeViews 和 decorations]
-  Views --> CodeMirror[CodeMirror 6 代码编辑]
-  Views --> Mermaid[Mermaid SVG 预览]
-  Views --> KaTeX[KaTeX 公式预览]
-  Parser --> State
-  State --> Serializer
-  Serializer --> Files[本地打开和保存流程]
-  Specs[specs/features] --> Tests[规格回放测试]
-  Tests --> Plugins
-```
+运行时权威是 ProseMirror `EditorState`，由共享的 `defaultPlugins` 功能栈组装。Markdown 通过解析器进入、通过序列化器离开，编辑过程中不会把 Markdown 文本当作唯一真相源。
 
-代码按小型功能模块组织：
+<p align="center">
+  <img src="docs/assets/typora-web-architecture.png" alt="Typora-Web 运行时架构：网站外壳、createEditor API、ProseMirror 状态、功能模块与原地渲染器" width="920" />
+</p>
+
+图源在 [`docs/diagrams/`](docs/diagrams/)。PNG 由 PlantUML 生成，便于 GitHub 直接展示，无需依赖 Mermaid 渲染。
+
+### Markdown 往返流程
+
+<p align="center">
+  <img src="docs/assets/typora-web-data-flow.png" alt="Typora-Web Markdown 往返流程：解析、实时编辑、序列化与保存" width="720" />
+</p>
+
+### 仓库布局
+
+依赖方向是单向的：`src/` 不得从 `tests/`、`specs/` 或 `website/` 导入。
+
+<p align="center">
+  <img src="docs/assets/typora-web-repo-layout.png" alt="Typora-Web 仓库布局与 src、website、specs、tests、docs 之间的单向依赖" width="760" />
+</p>
 
 | 路径 | 用途 |
 |---|---|
@@ -216,6 +216,7 @@ flowchart TD
 | `specs/features/` | 可执行行为规格 |
 | `tests/` | 单元测试、解析测试、往返测试和规格回放测试 |
 | `website/` | 原生演示站点和规格目录 |
+| `docs/diagrams/` | 架构图的 PlantUML 源文件 |
 
 新增功能应尽量保留 Markdown 源码形态。需要可视预览时，优先使用 ProseMirror decorations 或 NodeViews，让源码文本仍留在文档模型中。
 
@@ -229,6 +230,12 @@ pnpm dev
 pnpm test
 pnpm build
 pnpm build:lib
+```
+
+修改 PlantUML 图源后重新生成 PNG：
+
+```sh
+java -jar tools/plantuml.jar -tpng -o "../assets" docs/diagrams/*.puml
 ```
 
 测试套件以规格驱动。每条行为规格描述：

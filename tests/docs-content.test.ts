@@ -28,12 +28,16 @@ describe("project documentation language order", () => {
     expect(readme).toContain("## Markdown Support");
     expect(readme).toContain("## Architecture");
     expect(readme).toContain("## Development");
-    expect(normalizedReadme).toContain("```mermaid\nflowchart TD");
-    expect(readme).toContain("Writer in the browser");
-    expect(readme).toContain("defaultPlugins feature stack");
+    expect(readme).toContain('src="docs/assets/typora-web-architecture.png"');
+    expect(readme).toContain('src="docs/assets/typora-web-data-flow.png"');
+    expect(readme).toContain('src="docs/assets/typora-web-repo-layout.png"');
+    expect(readme).toContain("docs/diagrams/");
+    expect(readme).toContain("PlantUML");
+    expect(readme).toContain("defaultPlugins");
     expect(readme).toContain("TypeScript");
     expect(readme).toContain("ProseMirror");
     expect(readme).toContain("CodeMirror 6");
+    expect(readme).not.toContain("```mermaid\nflowchart TD");
     expect(readme).not.toContain("## 中文简介");
   });
 
@@ -56,12 +60,14 @@ describe("project documentation language order", () => {
     expect(readmeZh).toContain("## Markdown 支持");
     expect(readmeZh).toContain("## 架构");
     expect(readmeZh).toContain("## 开发");
-    expect(normalizedReadme).toContain("```mermaid\nflowchart TD");
-    expect(readmeZh).toContain("浏览器中的作者");
-    expect(readmeZh).toContain("defaultPlugins 功能栈");
+    expect(readmeZh).toContain('src="docs/assets/typora-web-architecture.png"');
+    expect(readmeZh).toContain('src="docs/assets/typora-web-data-flow.png"');
+    expect(readmeZh).toContain('src="docs/assets/typora-web-repo-layout.png"');
+    expect(readmeZh).toContain("PlantUML");
     expect(readmeZh).toContain("TypeScript");
     expect(readmeZh).toContain("ProseMirror");
     expect(readmeZh).toContain("CodeMirror 6");
+    expect(readmeZh).not.toContain("```mermaid\nflowchart TD");
   });
 
   test("CONTRIBUTING starts with Chinese contribution guidance", () => {

@@ -1,0 +1,58 @@
+@startuml typora-web-repo-layout
+!theme plain
+skinparam backgroundColor #FAFAF8
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam packageBorderColor #D1D5DB
+skinparam packageBackgroundColor #FFFFFF
+skinparam ArrowColor #6B7280
+
+title Typora-Web Repository Layout (one-way dependency)
+
+package "src/  editor library" as Src {
+  [lib / editor-api / schema]
+  [parser / serializer / normalize]
+  [features/*]
+  [renderers/*]
+  [styles/*]
+}
+
+package "website/  demo shell" as Web {
+  [nav / editor-shell]
+  [home + specs routes]
+  [i18n / appearance]
+}
+
+package "specs/  behavior fixtures" as Specs {
+  [event DSL]
+  [pretty DOM projection]
+  [features/*.specs.ts]
+}
+
+package "tests/  verification" as Tests {
+  [unit / round-trip]
+  [feature replay]
+  [website shell]
+}
+
+package "docs/  contributor docs" as Docs {
+  [architecture diagrams]
+  [syntax survey]
+  [release process]
+}
+
+Web --> Src : imports public API only
+Tests --> Src
+Tests --> Web
+Tests --> Specs
+Specs ..> Src : describes runtime behavior
+Docs ..> Src : documents contracts
+
+note bottom of Src
+  src/ must not import from
+  tests/, specs/, or website/.
+end note
+
+@enduml

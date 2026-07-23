@@ -1,0 +1,45 @@
+@startuml typora-web-data-flow
+!theme plain
+skinparam backgroundColor #FAFAF8
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundCorner 6
+skinparam ArrowColor #4B5563
+skinparam activityBackgroundColor #FFFFFF
+skinparam activityBorderColor #9CA3AF
+skinparam activityDiamondBackgroundColor #FFF8EB
+skinparam activityDiamondBorderColor #D6CBB2
+skinparam noteBackgroundColor #F3F4F6
+skinparam noteBorderColor #D1D5DB
+
+title Typora-Web Markdown Round-Trip Flow
+
+start
+:Open or paste Markdown source;
+:parser.ts (markdown-it CommonMark);
+:Build ProseMirror document;
+:EditorState becomes runtime authority;
+
+partition "Live editing" {
+  :User types / shortcuts / menus;
+  :Feature modules mutate text nodes;
+  :normalize.ts derives Method-B marks;
+  :Decorations / NodeViews update preview;
+  if (Valid math / mermaid / HTML?) then (yes)
+    :Render KaTeX / Mermaid / sanitized HTML;
+  else (no)
+    :Keep editable source visible;
+  endif
+}
+
+:serializer.ts emits Markdown;
+:Save / copy / download;
+stop
+
+note right
+  Goal: lossless round-trip for
+  supported Typora-compatible syntax.
+end note
+
+@enduml
