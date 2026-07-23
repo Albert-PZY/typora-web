@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.1](https://github.com/Albert-PZY/typora-web/compare/v0.9.0...v0.9.1) (2026-07-23)
+
+
+### Bug Fixes
+
+* **editor:** complete homepage editing workflows ([edfed7a](https://github.com/Albert-PZY/typora-web/commit/edfed7a635a3ba76560f97fd46a2b232c883963d))
+* **search:** center and highlight matched content ([4868212](https://github.com/Albert-PZY/typora-web/commit/48682126874130bd18a957334b6f7ae66ed39800))
+* **search:** center and highlight matched content ([c8a71df](https://github.com/Albert-PZY/typora-web/commit/c8a71df68e6da66f72f702640ac207c35a782cae))
+* **serializer:** keep adjacent list blocks tight across source toggles ([75d7d3f](https://github.com/Albert-PZY/typora-web/commit/75d7d3f0c55d6d953650c50682ffaaddaa486f48))
+* source toggle list stability, website chrome polish, and PlantUML docs ([c974b77](https://github.com/Albert-PZY/typora-web/commit/c974b7760cab943f3395dc6c8c7fe235ed3a4a26))
+* **website:** polish Typora-style chrome and reading layout ([99ae8be](https://github.com/Albert-PZY/typora-web/commit/99ae8be61df160e7b73fa7292c0327725bda9cb1))
+
 ## [0.9.0](https://github.com/Albert-PZY/typora-web/compare/v0.8.0...v0.9.0) (2026-05-28)
 
 
