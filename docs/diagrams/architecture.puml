@@ -1,0 +1,100 @@
+@startuml typora-web-architecture
+!theme plain
+skinparam backgroundColor #FAFAF8
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundCorner 8
+skinparam ArrowColor #6B7280
+skinparam ArrowThickness 1.2
+skinparam packageBorderColor #D1D5DB
+skinparam packageBackgroundColor #FFFFFF
+skinparam packageFontStyle bold
+skinparam packageFontColor #111827
+skinparam componentBorderColor #9CA3AF
+skinparam componentBackgroundColor #FFFFFF
+skinparam componentFontColor #1F2937
+skinparam noteBorderColor #D6CBB2
+skinparam noteBackgroundColor #FFF8EB
+skinparam noteFontColor #5B4B2E
+skinparam activityBackgroundColor #FFFFFF
+skinparam activityBorderColor #9CA3AF
+
+title Typora-Web Runtime Architecture
+
+actor "Writer\n(Browser)" as User
+
+package "Website Shell (website/)" as Shell {
+  component "Top menubar\n+ sidebar + statusbar" as Chrome
+  component "createEditor()\ncontroller host" as Host
+}
+
+package "Public API (src/lib.ts)" as API {
+  component "createEditor()" as Create
+  component "Editor controller\nget/set Markdown\nmodes / local files" as Controller
+}
+
+package "Runtime Authority" as Core {
+  component "ProseMirror\nEditorState" as State
+  component "defaultPlugins()\nfeature stack" as Plugins
+  component "normalize.ts\nMethod-B marks" as Normalize
+}
+
+package "IO Boundary" as IO {
+  component "parser.ts\nmarkdown-it CM" as Parser
+  component "serializer.ts\nround-trip MD" as Serializer
+  component "Local open / save\nFile System Access" as Files
+}
+
+package "Feature Modules (src/features/)" as Features {
+  component "heading / list / table\nlink / image / math ..." as FeatureSet
+}
+
+package "In-place Views" as Views {
+  component "Decorations\n+ NodeViews" as Deco
+  component "CodeMirror 6\nfenced code / source" as CM
+  component "KaTeX math" as Katex
+  component "Mermaid SVG" as Mermaid
+  component "DOMPurify HTML" as Sanitize
+}
+
+package "Verification" as Verify {
+  component "specs/features/*\nevent DSL" as Specs
+  component "tests/*\nspec replay" as Tests
+}
+
+User --> Chrome : edit / open menus
+Chrome --> Host
+Host --> Create
+Create --> Controller
+Controller --> State
+Controller --> Files
+State --> Plugins
+Plugins --> FeatureSet
+Plugins --> Normalize
+FeatureSet --> Deco
+Deco --> CM
+Deco --> Katex
+Deco --> Mermaid
+Deco --> Sanitize
+Parser --> State : Markdown in
+State --> Serializer : Markdown out
+Files --> Parser
+Serializer --> Files
+Specs --> Tests
+Tests --> Plugins
+
+note right of State
+  Markdown is only an IO boundary.
+  Runtime truth is EditorState.
+  Inline marks are derived from
+  delimiter characters in text.
+end note
+
+note bottom of Features
+  One module per behavior.
+  Mutate source text; let
+  normalize rebuild marks.
+end note
+
+@enduml

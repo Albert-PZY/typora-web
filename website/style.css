@@ -14,89 +14,104 @@
 html, body {
   margin: 0;
   padding: 0;
-  font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI",
-    "Helvetica Neue", system-ui, sans-serif;
-  color: #1f1f1f;
-  background: #f5f4f0;
+  font: 15px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Helvetica Neue", "PingFang SC", system-ui, sans-serif;
+  color: #2a2a2a;
+  /* Warm paper page — lower contrast than pure white for long reading. */
+  background: #f3f1eb;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 #app { display: flex; flex-direction: column; min-height: 100vh; }
 [hidden] { display: none !important; }
 
 /* ─── nav ────────────────────────────────────────────────────────── */
+/* Typora desktop chrome: a flat title/menu strip — no card chrome on
+ * the menubar itself. Brand + route links sit left; app actions right. */
 .site-nav {
   display: flex;
   align-items: center;
-  gap: 28px;
-  padding: 14px 32px;
-  font-size: 14px;
+  gap: 20px;
+  min-height: 36px;
+  padding: 0 20px;
+  font-size: 13px;
   position: sticky;
   top: 0;
-  background: rgba(245, 244, 240, 0.85);
+  background: rgba(243, 241, 235, 0.94);
   backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.055);
   z-index: 30;
 }
 .site-nav .brand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   font-weight: 600;
   color: #1f1f1f;
   text-decoration: none;
   letter-spacing: -0.01em;
-  font-size: 15px;
+  font-size: 13.5px;
+  flex-shrink: 0;
 }
 .site-nav .brand img {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   display: block;
 }
 .site-nav .nav-links {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 14px;
   flex: 1;
   min-width: 0;
 }
 .site-nav .nav-links a {
   color: #888;
   text-decoration: none;
-  padding: 4px 0;
-  transition: color 0.15s;
+  padding: 2px 0;
+  transition: color 0.12s;
+  font-size: 13px;
 }
 .site-nav .nav-links a:hover { color: #1f1f1f; }
 .site-nav .nav-links a.active { color: #1f1f1f; }
 .site-nav .editor-nav-group {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   min-width: 0;
 }
-.site-nav .ext { color: #888; text-decoration: none; transition: color 0.15s; }
+/* Subtle vertical seam between route link and Typora menubar. */
+.site-nav .editor-nav-group > a[data-route="/"] + .editor-menu-bar {
+  margin-left: 2px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+}
+.site-nav .ext { color: #888; text-decoration: none; transition: color 0.12s; }
 .site-nav .ext:hover { color: #1f1f1f; }
 .site-nav .nav-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
+  flex-shrink: 0;
 }
 .site-nav .nav-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   color: #888;
   cursor: pointer;
   padding: 0;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.12s, color 0.12s;
 }
 .site-nav .nav-icon svg {
-  width: 17px;
-  height: 17px;
+  width: 16px;
+  height: 16px;
   display: block;
   fill: none;
   stroke: currentColor;
@@ -110,7 +125,7 @@ html, body {
 }
 .site-nav .nav-icon:hover,
 .site-nav .nav-icon:focus-visible {
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(0, 0, 0, 0.05);
   color: #1f1f1f;
   outline: none;
 }
@@ -119,7 +134,7 @@ html, body {
  * jumps don't tuck the target under it. The lib uses native
  * scrollIntoView({block: "start"}); each host decides its own offset. */
 .ProseMirror :is(h1, h2, h3, h4, h5, h6) {
-  scroll-margin-top: 72px;
+  scroll-margin-top: 52px;
 }
 
 /* ─── page wrapper ───────────────────────────────────────────────── */
@@ -144,46 +159,49 @@ html, body {
 .page-home .route-footer a:hover { color: #1f1f1f; border-bottom-color: #1f1f1f; }
 
 /* ─── home: paper around the createEditor() surface ──────────────── */
-/* The lib's createEditor() mounts a `.typora-web-wrap` containing a
- * `.typora-web-editor-host` (the PM view) and a hidden
- * `.typora-web-source-editor` (the CM6 source mode editor). On home we
- * style the wrap as a paper sheet floating over the off-white page;
- * specs and other routes stay flat.
- *
- * Two-layer shadow: tight close + wider ambient (Bear / Notion /
- * Typora's own surface). */
+/* Content-first reading surface: soft paper over a warm page, generous
+ * margins, restrained shadow. Prefer long-form comfort over chrome. */
 .page-home .typora-web-wrap {
-  min-height: 420px;
-  padding: 20px 40px 40px;
-  background: #fff;
-  border-radius: 3px;
+  min-height: min(72vh, 820px);
+  padding: 48px 64px 80px;
+  background: #fffcf7;
+  border: 1px solid rgba(0, 0, 0, 0.035);
+  border-radius: 2px;
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 8px 32px rgba(0, 0, 0, 0.06);
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 10px 36px rgba(40, 30, 10, 0.05);
   box-sizing: border-box;
 }
 .page-home .typora-web-source-editor {
-  font: 14px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: #555;
+  font: 14.5px/1.75 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #4a4a4a;
 }
 .page-home {
-  --editor-sidebar-width: min(260px, calc(100vw - 28px));
-  --editor-sidebar-nudge: calc(var(--editor-sidebar-width) - 16px);
-  --editor-workspace-shift: clamp(112px, calc(var(--editor-sidebar-width) - 112px), 168px);
-  padding-top: 16px;
-  padding-bottom: 112px;
-  max-width: 920px;
+  --editor-sidebar-width: min(248px, calc(100vw - 28px));
+  --editor-sidebar-nudge: calc(var(--editor-sidebar-width) - 12px);
+  --editor-workspace-shift: clamp(96px, calc(var(--editor-sidebar-width) - 120px), 156px);
+  /* ~65–75ch reading measure when the paper is centered. */
+  max-width: min(880px, calc(100vw - 48px));
+  padding-top: 20px;
+  padding-bottom: 120px;
+  padding-left: 24px;
+  padding-right: 24px;
 }
+/* Typora menubar: flat top-level labels, no pill/card container.
+ * Dropdowns mimic native Electron / Windows menus — tight rows, check
+ * gutter, right-aligned accelerators, hairline separators. */
 .editor-menu-bar {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   width: max-content;
   max-width: 100%;
+  height: 36px;
   margin: 0;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.68);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  padding: 0 2px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   overflow: visible;
   position: relative;
   z-index: 14;
@@ -191,6 +209,8 @@ html, body {
 .editor-menu-group {
   position: relative;
   flex: 0 0 auto;
+  display: flex;
+  align-items: stretch;
 }
 .editor-menu-button,
 .editor-menu-dropdown button,
@@ -198,61 +218,126 @@ html, body {
 .editor-sidebar button {
   border: none;
   background: transparent;
-  color: #666;
+  color: #444;
   cursor: pointer;
   font: 13px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
 .editor-menu-button {
-  min-width: 52px;
-  padding: 7px 12px;
-  border-radius: 5px;
+  min-width: 0;
+  height: 100%;
+  padding: 0 10px;
+  border-radius: 0;
+  color: #333;
+  font-size: 13px;
+  letter-spacing: 0.01em;
 }
 .editor-menu-group.open .editor-menu-button,
 .editor-menu-button:hover,
 .editor-menu-button:focus-visible {
-  background: #fff;
-  color: #1f1f1f;
+  background: rgba(0, 0, 0, 0.06);
+  color: #1a1a1a;
   outline: none;
 }
 .editor-menu-dropdown {
   position: absolute;
-  top: calc(100% + 5px);
+  top: 100%;
   left: 0;
-  z-index: 20;
-  width: 292px;
-  padding: 6px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 40;
+  min-width: 248px;
+  width: max-content;
+  max-width: min(360px, calc(100vw - 24px));
+  padding: 4px 0;
+  margin: 0;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 0;
+  background: #f7f7f7;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 8px 20px rgba(0, 0, 0, 0.12);
 }
 .editor-menu-dropdown button {
   display: grid;
-  grid-template-columns: 18px 1fr auto;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: 4px 10px;
   width: 100%;
+  min-height: 28px;
   background: transparent;
   text-align: left;
   line-height: 1.25;
-  border-radius: 5px;
-  padding: 7px 8px;
+  border-radius: 0;
+  padding: 4px 18px 4px 8px;
+  color: #222;
+  font-size: 13px;
 }
-.editor-menu-dropdown button:hover,
-.editor-menu-dropdown button:focus-visible {
-  background: #f3f3f1;
-  color: #1f1f1f;
+.editor-menu-dropdown button:hover:not(.is-disabled):not([aria-disabled="true"]),
+.editor-menu-dropdown button:focus-visible:not(.is-disabled):not([aria-disabled="true"]) {
+  background: #0067c0;
+  color: #fff;
   outline: none;
 }
-.editor-menu-dropdown kbd {
+.editor-menu-dropdown button:hover:not(.is-disabled):not([aria-disabled="true"]) .editor-menu-accel,
+.editor-menu-dropdown button:focus-visible:not(.is-disabled):not([aria-disabled="true"]) .editor-menu-accel,
+.editor-menu-dropdown button:hover:not(.is-disabled):not([aria-disabled="true"]) .editor-menu-check,
+.editor-menu-dropdown button:focus-visible:not(.is-disabled):not([aria-disabled="true"]) .editor-menu-check {
+  color: rgba(255, 255, 255, 0.88);
+}
+.editor-menu-dropdown button.is-disabled,
+.editor-menu-dropdown button[aria-disabled="true"] {
+  color: #a0a0a0;
+  cursor: default;
+  opacity: 0.72;
+}
+.editor-menu-dropdown button.is-disabled .editor-menu-accel,
+.editor-menu-dropdown button[aria-disabled="true"] .editor-menu-accel,
+.editor-menu-dropdown button.is-disabled .editor-menu-check,
+.editor-menu-dropdown button[aria-disabled="true"] .editor-menu-check {
+  color: #b5b5b5;
+}
+.editor-menu-dropdown button.is-disabled:hover,
+.editor-menu-dropdown button[aria-disabled="true"]:hover,
+.editor-menu-dropdown button.is-disabled:focus-visible,
+.editor-menu-dropdown button[aria-disabled="true"]:focus-visible {
+  background: transparent;
+  color: #a0a0a0;
+}
+.editor-menu-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor-menu-accel {
   color: #777;
+  font: 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  justify-self: end;
+  padding-left: 20px;
+}
+.editor-menu-dropdown kbd.editor-menu-accel {
   font: inherit;
+  color: #777;
 }
 .editor-menu-check {
-  color: #555;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: #333;
+  font-size: 12px;
+  line-height: 1;
 }
 .editor-menu-dropdown button.checked .editor-menu-check::before {
   content: "✓";
+  font-weight: 600;
+}
+.editor-menu-separator {
+  height: 1px;
+  margin: 4px 10px;
+  background: rgba(0, 0, 0, 0.1);
+  pointer-events: none;
 }
 .editor-workspace {
   display: block;
@@ -269,16 +354,16 @@ html, body {
 }
 .editor-sidebar {
   position: fixed;
-  top: 58px;
+  top: 37px;
   left: 0;
   bottom: 0;
   z-index: 19;
   width: var(--editor-sidebar-width);
   box-sizing: border-box;
-  border-right: 1px solid rgba(0, 0, 0, 0.08);
-  padding: 12px 14px 16px;
-  background: rgba(250, 249, 246, 0.96);
-  box-shadow: 12px 0 30px rgba(0, 0, 0, 0.08);
+  border-right: 1px solid rgba(0, 0, 0, 0.07);
+  padding: 10px 10px 18px;
+  background: rgba(245, 243, 237, 0.98);
+  box-shadow: 8px 0 24px rgba(0, 0, 0, 0.05);
   overflow: auto;
   transform: translateX(-100%);
   visibility: hidden;
@@ -287,6 +372,7 @@ html, body {
     transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
     visibility 0s linear 0.24s;
   will-change: transform;
+  font-size: 12.5px;
 }
 .page-home.sidebar-open .editor-sidebar {
   transform: translateX(0);
@@ -297,20 +383,21 @@ html, body {
 .editor-sidebar-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  margin: 0 0 14px;
-  padding: 3px;
-  border-radius: 7px;
-  background: rgba(0, 0, 0, 0.035);
+  gap: 2px;
+  margin: 0 0 12px;
+  padding: 2px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.04);
 }
 .editor-sidebar-tabs button {
-  padding: 7px 6px;
-  border-radius: 5px;
+  padding: 6px 4px;
+  border-radius: 3px;
   color: #777;
+  font-size: 12px;
 }
 .editor-sidebar-tabs button.active {
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  background: #fffcf7;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
   color: #1f1f1f;
   font-weight: 600;
 }
@@ -424,69 +511,73 @@ html, body {
   font-size: 13px;
   margin: 12px 0;
 }
+/* Quiet floating status chips — secondary to the reading surface. */
 .editor-statusbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   pointer-events: none;
-  color: #888;
-  font-size: 12px;
+  color: #8a867c;
+  font-size: 11.5px;
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 18px;
+  bottom: 14px;
   z-index: 21;
 }
 .editor-statusbar-left,
 .editor-statusbar-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   pointer-events: auto;
   position: fixed;
-  bottom: 18px;
+  bottom: 14px;
   z-index: 21;
   transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
 }
 .editor-statusbar-left {
-  left: 28px;
+  left: 20px;
 }
 .editor-statusbar-right {
-  right: 28px;
+  right: 20px;
 }
 .page-home.sidebar-open .editor-statusbar-left {
   transform: translateX(var(--editor-sidebar-nudge));
 }
 .editor-statusbar button {
-  min-width: 28px;
-  height: 28px;
-  border-radius: 4px;
-  padding: 0 8px;
-  color: #777;
-  background: rgba(245, 244, 240, 0.82);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  min-width: 26px;
+  height: 26px;
+  border-radius: 3px;
+  padding: 0 7px;
+  color: #7a766c;
+  background: rgba(255, 252, 247, 0.88);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: none;
+  font-size: 11.5px;
 }
 .editor-statusbar button:hover,
 .editor-statusbar button.active {
   background: rgba(0, 0, 0, 0.05);
-  color: #1f1f1f;
+  color: #2a2a2a;
 }
 .editor-toolbar-status {
   display: block;
   position: fixed;
   left: 50%;
-  bottom: 23px;
-  max-width: min(52vw, 520px);
+  bottom: 18px;
+  max-width: min(48vw, 480px);
   transform: translateX(-50%);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #999;
-  font-size: 12px;
-  text-align: right;
+  color: #9a968c;
+  font-size: 11.5px;
+  text-align: center;
+  pointer-events: none;
 }
 .editor-stats-popover {
   position: absolute;
@@ -530,8 +621,8 @@ html, body {
 }
 .editor-search-panel {
   position: fixed;
-  top: 70px;
-  right: 32px;
+  top: 48px;
+  right: 24px;
   z-index: 22;
   display: grid;
   grid-template-columns: minmax(140px, 220px) minmax(120px, 200px) auto repeat(5, auto);
@@ -539,7 +630,7 @@ html, body {
   gap: 6px;
   padding: 8px;
   border: 1px solid rgba(0, 0, 0, 0.09);
-  border-radius: 7px;
+  border-radius: 4px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.13);
   backdrop-filter: blur(12px);
@@ -615,37 +706,57 @@ html, body {
   .site-nav {
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 10px 12px;
-    min-height: 86px;
-    padding: 12px 16px;
+    gap: 0 8px;
+    min-height: 0;
+    padding: 0 12px;
+    align-items: center;
   }
   .site-nav .brand {
     min-width: 0;
+    height: 36px;
   }
   .site-nav .nav-links {
-    align-self: start;
+    align-self: stretch;
     grid-column: 1 / -1;
     grid-row: 2;
-    gap: 12px;
+    gap: 10px;
+    min-height: 34px;
+    padding: 0 0 2px;
     overflow-x: auto;
     white-space: nowrap;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
   }
   .site-nav .editor-nav-group {
-    gap: 10px;
+    gap: 8px;
     min-width: max-content;
+    height: 100%;
+  }
+  .site-nav .editor-nav-group > a[data-route="/"] + .editor-menu-bar {
+    padding-left: 6px;
   }
   .site-nav .nav-actions {
-    align-self: start;
+    align-self: center;
     grid-column: 2;
     grid-row: 1;
     justify-self: end;
   }
   .editor-menu-bar {
     flex-shrink: 0;
+    height: 34px;
   }
   .editor-menu-button {
-    min-width: 44px;
-    padding: 7px 9px;
+    min-width: 0;
+    padding: 0 8px;
+  }
+  .page-home {
+    max-width: 100%;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 12px;
+  }
+  .page-home .typora-web-wrap {
+    padding: 28px 20px 56px;
+    min-height: 60vh;
   }
   .page-home.sidebar-open .hero-editor {
     min-width: 0;
@@ -658,21 +769,22 @@ html, body {
     width: 100%;
   }
   .editor-statusbar-left {
-    left: 14px;
+    left: 12px;
   }
   .editor-statusbar-right {
-    right: 14px;
+    right: 12px;
   }
   .page-home.sidebar-open .editor-statusbar-left {
     transform: none;
   }
   .editor-sidebar {
-    top: 110px;
+    top: 72px;
+    width: min(100vw - 24px, 280px);
   }
   .editor-search-panel {
-    top: 118px;
-    left: 14px;
-    right: 14px;
+    top: 80px;
+    left: 12px;
+    right: 12px;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto repeat(3, auto);
   }
   .editor-search-count { grid-column: 1 / 3; grid-row: 2; text-align: left; }
@@ -682,7 +794,16 @@ html, body {
 
 @media (min-width: 900px) {
   .page-home {
-    --editor-sidebar-width: 280px;
+    --editor-sidebar-width: 260px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .page-home {
+    max-width: 920px;
+  }
+  .page-home .typora-web-wrap {
+    padding: 56px 72px 96px;
   }
 }
 
@@ -1119,7 +1240,8 @@ html, body {
   background: #17191d;
 }
 :root[data-appearance="dark"] .site-nav {
-  background: rgba(23, 25, 29, 0.86);
+  background: rgba(30, 32, 36, 0.94);
+  border-bottom-color: rgba(255, 255, 255, 0.06);
 }
 :root[data-appearance="dark"] .site-nav .brand,
 :root[data-appearance="dark"] .site-nav .nav-links a.active {
@@ -1137,25 +1259,31 @@ html, body {
   color: #ece7dd;
   background: rgba(232, 225, 214, 0.08);
 }
+:root[data-appearance="dark"] .site-nav .editor-nav-group > a[data-route="/"] + .editor-menu-bar {
+  border-left-color: rgba(255, 255, 255, 0.1);
+}
 :root[data-appearance="dark"] .page-home .typora-web-wrap {
-  background: #1f2125;
+  background: #1c1e22;
+  border-color: rgba(255, 255, 255, 0.04);
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.28),
     0 16px 42px rgba(0, 0, 0, 0.32);
 }
 :root[data-appearance="dark"] .page-home .typora-web-source-editor {
-  color: #d8d3ca;
+  color: #cfc9bf;
 }
 :root[data-appearance="dark"] .editor-menu-bar {
-  background: rgba(43, 46, 51, 0.76);
-  border-color: #34373c;
+  background: transparent;
+  border: none;
   box-shadow: none;
 }
-:root[data-appearance="dark"] .editor-menu-button,
+:root[data-appearance="dark"] .editor-menu-button {
+  color: #d0cbc2;
+}
 :root[data-appearance="dark"] .editor-menu-dropdown button,
 :root[data-appearance="dark"] .editor-statusbar button,
 :root[data-appearance="dark"] .editor-sidebar button {
-  color: #aaa399;
+  color: #d0cbc2;
 }
 :root[data-appearance="dark"] .editor-statusbar button {
   background: rgba(31, 33, 37, 0.86);
@@ -1164,15 +1292,20 @@ html, body {
 :root[data-appearance="dark"] .editor-menu-button:hover,
 :root[data-appearance="dark"] .editor-menu-button:focus-visible,
 :root[data-appearance="dark"] .editor-menu-group.open .editor-menu-button {
-  background: rgba(43, 46, 51, 0.76);
-  color: #ece7dd;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f2ede4;
 }
 :root[data-appearance="dark"] .editor-menu-dropdown,
 :root[data-appearance="dark"] .editor-stats-popover,
 :root[data-appearance="dark"] .editor-search-panel {
-  background: #24262a;
-  border-color: #3c3f43;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
+  background: #2b2d31;
+  border-color: #3f4348;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.28),
+    0 12px 28px rgba(0, 0, 0, 0.4);
+}
+:root[data-appearance="dark"] .editor-menu-separator {
+  background: rgba(255, 255, 255, 0.1);
 }
 :root[data-appearance="dark"] .editor-search-field input {
   color: #ece7dd;
@@ -1210,22 +1343,60 @@ html, body {
   background: rgba(62, 164, 86, 0.64);
   box-shadow: 0 0 0 2px rgba(132, 230, 154, 0.32);
 }
-:root[data-appearance="dark"] .editor-menu-dropdown button:hover,
-:root[data-appearance="dark"] .editor-menu-dropdown button:focus-visible,
+:root[data-appearance="dark"] .editor-menu-dropdown button:hover:not(.is-disabled):not([aria-disabled="true"]),
+:root[data-appearance="dark"] .editor-menu-dropdown button:focus-visible:not(.is-disabled):not([aria-disabled="true"]) {
+  background: #0067c0;
+  color: #fff;
+}
+:root[data-appearance="dark"] .editor-menu-dropdown button:hover:not(.is-disabled):not([aria-disabled="true"]) .editor-menu-accel,
+:root[data-appearance="dark"] .editor-menu-dropdown button:focus-visible:not(.is-disabled):not([aria-disabled="true"]) .editor-menu-accel,
+:root[data-appearance="dark"] .editor-menu-dropdown button:hover:not(.is-disabled):not([aria-disabled="true"]) .editor-menu-check,
+:root[data-appearance="dark"] .editor-menu-dropdown button:focus-visible:not(.is-disabled):not([aria-disabled="true"]) .editor-menu-check {
+  color: rgba(255, 255, 255, 0.88);
+}
+:root[data-appearance="dark"] .editor-menu-dropdown button.is-disabled,
+:root[data-appearance="dark"] .editor-menu-dropdown button[aria-disabled="true"] {
+  color: #6f6b64;
+  opacity: 0.75;
+}
+:root[data-appearance="dark"] .editor-menu-dropdown button.is-disabled .editor-menu-accel,
+:root[data-appearance="dark"] .editor-menu-dropdown button[aria-disabled="true"] .editor-menu-accel,
+:root[data-appearance="dark"] .editor-menu-dropdown button.is-disabled .editor-menu-check,
+:root[data-appearance="dark"] .editor-menu-dropdown button[aria-disabled="true"] .editor-menu-check {
+  color: #5f5b55;
+}
+:root[data-appearance="dark"] .editor-menu-dropdown button.is-disabled:hover,
+:root[data-appearance="dark"] .editor-menu-dropdown button[aria-disabled="true"]:hover,
+:root[data-appearance="dark"] .editor-menu-dropdown button.is-disabled:focus-visible,
+:root[data-appearance="dark"] .editor-menu-dropdown button[aria-disabled="true"]:focus-visible {
+  background: transparent;
+  color: #6f6b64;
+}
 :root[data-appearance="dark"] .editor-statusbar button:hover,
 :root[data-appearance="dark"] .editor-statusbar button.active {
   background: #303339;
   color: #ece7dd;
 }
-:root[data-appearance="dark"] .editor-menu-dropdown kbd,
+:root[data-appearance="dark"] .editor-menu-dropdown .editor-menu-accel,
+:root[data-appearance="dark"] .editor-menu-dropdown kbd.editor-menu-accel {
+  color: #8b8f95;
+}
+:root[data-appearance="dark"] .editor-menu-check {
+  color: #d0cbc2;
+}
 :root[data-appearance="dark"] .editor-statusbar,
 :root[data-appearance="dark"] .editor-sidebar-empty {
   color: #8b8f95;
 }
 :root[data-appearance="dark"] .editor-sidebar {
-  background: rgba(31, 33, 37, 0.97);
+  background: rgba(26, 28, 32, 0.98);
   border-right-color: #34373c;
-  box-shadow: 12px 0 30px rgba(0, 0, 0, 0.32);
+  box-shadow: 8px 0 24px rgba(0, 0, 0, 0.36);
+}
+:root[data-appearance="dark"] .editor-statusbar button {
+  background: rgba(28, 30, 34, 0.92);
+  border-color: rgba(255, 255, 255, 0.06);
+  color: #9b958c;
 }
 :root[data-appearance="dark"] .editor-sidebar-tabs {
   background: rgba(232, 225, 214, 0.06);

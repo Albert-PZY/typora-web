@@ -1,3 +1,5 @@
+import { redoDepth, undoDepth } from "prosemirror-history";
+
 import type { Editor } from "../src/lib.ts";
 import { pickMarkdownDirectory, type MarkdownTreeEntry } from "../src/local-files.ts";
 import {
@@ -33,20 +35,32 @@ type EditorTreeEntry = Omit<MarkdownTreeEntry, "children"> & {
   content?: string;
 };
 
-const MENU_GROUPS = [
+type MenuItem =
+  | readonly [action: string, label: string, shortcut: string]
+  | "---";
+
+const MENU_GROUPS: ReadonlyArray<{
+  key: string;
+  label: string;
+  items: ReadonlyArray<MenuItem>;
+}> = [
   {
     key: "file",
     label: "home.menu.file",
     items: [
       ["new", "home.menu.new", "Ctrl+N"],
       ["new-window", "home.menu.newWindow", "Ctrl+Shift+N"],
+      "---",
       ["open", "home.open", "Ctrl+O"],
       ["open-folder", "home.menu.openFolder", ""],
+      "---",
       ["save", "home.save", "Ctrl+S"],
       ["save-as", "home.saveAs", "Ctrl+Shift+S"],
+      "---",
       ["import", "home.menu.import", ""],
       ["export", "home.menu.export", ""],
       ["print", "home.menu.print", "Alt+Shift+P"],
+      "---",
       ["close", "home.menu.close", "Ctrl+W"],
     ],
   },
@@ -56,11 +70,13 @@ const MENU_GROUPS = [
     items: [
       ["undo", "home.menu.undo", "Ctrl+Z"],
       ["redo", "home.menu.redo", "Ctrl+Y"],
+      "---",
       ["cut", "home.menu.cut", "Ctrl+X"],
       ["copy", "home.menu.copy", "Ctrl+C"],
       ["paste", "home.menu.paste", "Ctrl+V"],
       ["copy-markdown", "home.menu.copyMarkdown", "Ctrl+Shift+C"],
       ["paste-text", "home.menu.pasteText", "Ctrl+Shift+V"],
+      "---",
       ["select-all", "home.menu.selectAll", "Ctrl+A"],
       ["find", "home.menu.find", "Ctrl+F"],
     ],
@@ -73,9 +89,11 @@ const MENU_GROUPS = [
       ["heading-2", "home.menu.heading2", "Ctrl+2"],
       ["heading-3", "home.menu.heading3", "Ctrl+3"],
       ["paragraph", "home.menu.paragraphText", "Ctrl+0"],
+      "---",
       ["math-block", "home.menu.mathBlock", "Ctrl+Shift+M"],
       ["code-block", "home.menu.codeBlock", "Ctrl+Shift+K"],
       ["quote", "home.menu.quote", "Ctrl+Shift+Q"],
+      "---",
       ["ordered-list", "home.menu.orderedList", "Ctrl+Shift+7"],
       ["bullet-list", "home.menu.bulletList", "Ctrl+Shift+8"],
       ["task-list", "home.menu.taskList", "Ctrl+Shift+X"],
@@ -92,8 +110,10 @@ const MENU_GROUPS = [
       ["inline-math", "home.menu.inlineMath", ""],
       ["strike", "home.menu.strike", "Alt+Shift+5"],
       ["highlight", "home.menu.highlight", ""],
+      "---",
       ["link", "home.menu.link", "Ctrl+K"],
       ["image", "home.menu.image", ""],
+      "---",
       ["clear-style", "home.menu.clearStyle", ""],
     ],
   },
@@ -104,15 +124,17 @@ const MENU_GROUPS = [
       ["sidebar", "home.menu.sidebar", "Ctrl+Shift+L"],
       ["outline", "home.menu.outline", "Ctrl+Shift+1"],
       ["file-tree", "home.menu.fileTree", "Ctrl+Shift+3"],
+      "---",
       ["search", "home.menu.search", "Ctrl+Shift+F"],
       ["source", "home.menu.source", "Ctrl+/"],
       ["focus", "home.focus", "F8"],
       ["typewriter", "home.typewriter", "F9"],
+      "---",
       ["statusbar", "home.menu.statusbar", ""],
       ["fullscreen", "home.menu.fullscreen", "F11"],
     ],
   },
-] as const;
+];
 
 const EDITOR_COMMAND_ACTIONS = new Set([
   "undo",
@@ -257,17 +279,42 @@ export function mountEditorShell(options: ShellOptions): () => void {
   const statsPanel = statusbar.querySelector<HTMLElement>(".editor-stats-popover")!;
   const search = mountEditorSearch(main, editor);
 
+  function selectionIsEmpty(): boolean {
+    if (editor.isSourceMode()) return true;
+    return editor.view.state.selection.empty;
+  }
+
+  function isMenuActionDisabled(action: string): boolean {
+    if (action === "undo") {
+      return editor.isSourceMode() || undoDepth(editor.view.state) <= 0;
+    }
+    if (action === "redo") {
+      return editor.isSourceMode() || redoDepth(editor.view.state) <= 0;
+    }
+    if (action === "cut" || action === "copy" || action === "copy-markdown" || action === "clear-style") {
+      return selectionIsEmpty();
+    }
+    return false;
+  }
+
   function renderMenuChecks(): void {
-    for (const item of menuBar.querySelectorAll<HTMLElement>("[data-menu-action]")) {
+    for (const item of menuBar.querySelectorAll<HTMLButtonElement>("[data-menu-action]")) {
+      const action = item.dataset.menuAction ?? "";
       item.classList.toggle("checked", (
-        (item.dataset.menuAction === "focus" && editor.isFocusMode()) ||
-        (item.dataset.menuAction === "typewriter" && editor.isTypewriterMode()) ||
-        (item.dataset.menuAction === "source" && editor.isSourceMode()) ||
-        (item.dataset.menuAction === "statusbar" && statusbarOpen) ||
-        (item.dataset.menuAction === "sidebar" && sidebarOpen) ||
-        (item.dataset.menuAction === "file-tree" && sidebarOpen && sidebarMode === "files") ||
-        (item.dataset.menuAction === "outline" && sidebarOpen && sidebarMode === "outline")
+        (action === "focus" && editor.isFocusMode()) ||
+        (action === "typewriter" && editor.isTypewriterMode()) ||
+        (action === "source" && editor.isSourceMode()) ||
+        (action === "statusbar" && statusbarOpen) ||
+        (action === "sidebar" && sidebarOpen) ||
+        (action === "file-tree" && sidebarOpen && sidebarMode === "files") ||
+        (action === "outline" && sidebarOpen && sidebarMode === "outline")
       ));
+
+      // Prefer aria-disabled over the HTML disabled attribute so menu items
+      // still receive clicks; enablement is re-checked from live editor state.
+      const disabled = isMenuActionDisabled(action);
+      item.classList.toggle("is-disabled", disabled);
+      item.setAttribute("aria-disabled", disabled ? "true" : "false");
     }
     sourceButton.classList.toggle("active", editor.isSourceMode());
     sidebarButton.classList.toggle("active", sidebarOpen);
@@ -279,13 +326,21 @@ export function mountEditorShell(options: ShellOptions): () => void {
       <div class="editor-menu-group">
         <button type="button" class="editor-menu-button" data-menu="${group.key}" data-i18n="${group.label}" aria-haspopup="menu" aria-expanded="false"></button>
         <div class="editor-menu-dropdown" role="menu" hidden>
-          ${group.items.map(([action, label, shortcut]) => `
-            <button type="button" role="menuitem" data-menu-action="${action}">
-              <span class="editor-menu-check" aria-hidden="true"></span>
-              <span data-i18n="${label}"></span>
-              <kbd>${shortcut}</kbd>
-            </button>
-          `).join("")}
+          ${group.items.map((item) => {
+            if (item === "---") {
+              return `<div class="editor-menu-separator" role="separator"></div>`;
+            }
+            const [action, label, shortcut] = item;
+            return `
+              <button type="button" role="menuitem" data-menu-action="${action}">
+                <span class="editor-menu-check" aria-hidden="true"></span>
+                <span class="editor-menu-label" data-i18n="${label}"></span>
+                ${shortcut
+                  ? `<kbd class="editor-menu-accel">${shortcut}</kbd>`
+                  : `<span class="editor-menu-accel" aria-hidden="true"></span>`}
+              </button>
+            `;
+          }).join("")}
         </div>
       </div>
     `).join("");
@@ -300,6 +355,8 @@ export function mountEditorShell(options: ShellOptions): () => void {
       group.querySelector<HTMLButtonElement>(".editor-menu-button")
         ?.setAttribute("aria-expanded", owns ? "true" : "false");
     }
+    // Refresh undo/selection enablement whenever a menu is shown.
+    if (button) renderMenuChecks();
   }
 
   function renderTreeEntry(entry: MarkdownTreeEntry): string {
@@ -589,7 +646,21 @@ export function mountEditorShell(options: ShellOptions): () => void {
       return;
     }
     const item = target.closest<HTMLButtonElement>("[data-menu-action]");
-    if (item?.dataset.menuAction) void runMenuAction(item.dataset.menuAction);
+    if (item?.dataset.menuAction) {
+      // Recompute from live EditorState so selection-only items work after
+      // the caret moved without a DOM mutation (no HTML disabled attribute).
+      renderMenuChecks();
+      if (isMenuActionDisabled(item.dataset.menuAction)) return;
+      void runMenuAction(item.dataset.menuAction);
+    }
+  };
+
+  // Typora-style menubar: once a menu is open, hovering another top-level
+  // label switches the open dropdown without requiring another click.
+  const onMenuPointerOver = (event: PointerEvent): void => {
+    if (!menuBar.querySelector(".editor-menu-group.open")) return;
+    const menuButton = (event.target as HTMLElement).closest<HTMLButtonElement>(".editor-menu-button");
+    if (menuButton && menuBar.contains(menuButton)) setMenuOpen(menuButton);
   };
 
   const onSidebarClick = (event: MouseEvent): void => {
@@ -681,6 +752,7 @@ export function mountEditorShell(options: ShellOptions): () => void {
 
   buildMenus();
   menuBar.addEventListener("click", onMenuClick);
+  menuBar.addEventListener("pointerover", onMenuPointerOver);
   sidebar.addEventListener("click", onSidebarClick);
   statusbar.addEventListener("click", onStatusClick);
   document.addEventListener("mousedown", onDocumentMouseDown);
@@ -701,6 +773,7 @@ export function mountEditorShell(options: ShellOptions): () => void {
     refreshQueued = true;
     queueMicrotask(() => {
       refreshQueued = false;
+      renderMenuChecks();
       renderStats();
       if (sidebarOpen && sidebarMode === "outline") {
         const nextOutlineDocRef = editor.view.state.doc;
@@ -715,14 +788,26 @@ export function mountEditorShell(options: ShellOptions): () => void {
   });
   documentObserver.observe(host, { childList: true, characterData: true, subtree: true });
 
+  // Keep undo/redo and selection-dependent items in sync with focus / selection.
+  const onSelectionRefresh = (): void => {
+    renderMenuChecks();
+  };
+  document.addEventListener("selectionchange", onSelectionRefresh);
+  host.addEventListener("keyup", onSelectionRefresh);
+  host.addEventListener("mouseup", onSelectionRefresh);
+
   return () => {
     documentObserver.disconnect();
     search.destroy();
     cleanupLocale();
     menuBar.removeEventListener("click", onMenuClick);
+    menuBar.removeEventListener("pointerover", onMenuPointerOver);
     sidebar.removeEventListener("click", onSidebarClick);
     statusbar.removeEventListener("click", onStatusClick);
     document.removeEventListener("mousedown", onDocumentMouseDown);
+    document.removeEventListener("selectionchange", onSelectionRefresh);
+    host.removeEventListener("keyup", onSelectionRefresh);
+    host.removeEventListener("mouseup", onSelectionRefresh);
     window.removeEventListener("scroll", updateActiveOutline);
     window.removeEventListener("resize", updateActiveOutline);
     window.removeEventListener("keydown", onKeyDown, true);
